@@ -6,6 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "build": "echo 'Ready for Vercel'",
     "web": "node src/server.js",
     "pm2:start": "pm2 start src/index.js --name whats-tok",
     "pm2:stop": "pm2 stop whats-tok",
