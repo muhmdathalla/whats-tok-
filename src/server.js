@@ -89,9 +89,11 @@ app.get('/api/proxy', async (req, res) => {
 });
 
 export function startWebServer() {
-  app.listen(PORT, () => {
-    console.log(`🌐 Whats-Tok Web Platform berjalan di http://localhost:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+      console.log(`🌐 Whats-Tok Web Platform berjalan di http://localhost:${PORT}`);
+    });
+  }
   return app;
 }
 
@@ -99,3 +101,5 @@ export function startWebServer() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   startWebServer();
 }
+
+export default app;
