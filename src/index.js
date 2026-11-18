@@ -9,6 +9,7 @@ import qrcode from 'qrcode-terminal';
 import readline from 'readline';
 import { config } from './config.js';
 import { handleMessage } from './handler.js';
+import { startWebServer } from './server.js';
 
 // Setup logger minimalis
 const logger = pino({ level: 'silent' });
@@ -133,6 +134,11 @@ export async function startBot() {
 }
 
 // Jalankan bot jika file dieksekusi langsung
-startBot().catch((err) => {
-  console.error('Fatal Error saat memulai bot:', err);
-});
+startBot()
+  .then(() => {
+    // Start Web Server alongside WhatsApp Bot
+    startWebServer();
+  })
+  .catch((err) => {
+    console.error('Fatal Error saat memulai bot:', err);
+  });

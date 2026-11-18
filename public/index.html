@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whats-Tok - Universal Social Media Downloader</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 50%, #f472b6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+
+  <!-- Glow Background Effects -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-600/20 blur-[140px] rounded-full"></div>
+    <div class="absolute top-96 left-10 w-[350px] h-[350px] bg-sky-600/15 blur-[120px] rounded-full"></div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50 bg-slate-950/80">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="text-xl font-extrabold tracking-tight">Whats<span class="text-purple-400">Tok</span></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/muhmdathalla/whats-tok-" target="_blank" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-sm font-medium hover:text-white text-slate-300 transition-all">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="flex-1 max-w-4xl mx-auto px-4 py-12 md:py-16 w-full">
+    <div class="text-center space-y-4 mb-10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-xs font-semibold text-purple-300">
+        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+        Platform Downloader All-in-One
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
+        Download Video, Foto & Musik <br />
+        <span class="gradient-text">Tanpa Batasan Kualitas</span>
+      </h1>
+      <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
+        Unduh video TikTok tanpa watermark, album foto Instagram, musik Spotify, tweet Twitter/X, Pinterest, dan YouTube gratis.
+      </p>
+
+      <!-- Supported Badges -->
+      <div class="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs font-medium text-slate-400">
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">TikTok (Video & Slide)</span>
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Instagram (Reels & Carousel)</span>
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Spotify (MP3)</span>
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">YouTube</span>
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Twitter / X</span>
+        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Pinterest</span>
+      </div>
+    </div>
+
+    <!-- Downloader Box -->
+    <div class="glass-card rounded-2xl p-3 md:p-4 shadow-2xl shadow-purple-500/5 mb-10">
+      <form id="downloadForm" class="flex flex-col md:flex-row gap-3">
+        <div class="relative flex-1">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <i data-lucide="link" class="w-5 h-5"></i>
+          </div>
+          <input
+            id="urlInput"
+            type="url"
+            required
+            placeholder="Tempel tautan TikTok, Instagram, Spotify, YouTube..."
+            class="w-full pl-11 pr-24 py-3.5 bg-slate-900/90 border border-slate-800 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-slate-100 placeholder-slate-500 text-sm md:text-base transition-all"
+          />
+          <button
+            type="button"
+            id="pasteBtn"
+            class="absolute inset-y-1.5 right-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-all"
+          >
+            <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+            <span>Paste</span>
+          </button>
+        </div>
+        <button
+          id="submitBtn"
+          type="submit"
+          class="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl text-sm md:text-base flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Unduh</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Loading Skeleton -->
+    <div id="loading" class="hidden glass-card rounded-2xl p-8 text-center space-y-4">
+      <div class="inline-block animate-spin text-purple-400">
+        <i data-lucide="loader-2" class="w-8 h-8"></i>
+      </div>
+      <p class="text-slate-300 font-medium text-sm">Sedang mengambil media langsung dari sumbernya...</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div id="errorAlert" class="hidden rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300 text-sm mb-6 flex items-start gap-3">
+      <i data-lucide="alert-circle" class="w-5 h-5 shrink-0 text-rose-400 mt-0.5"></i>
+      <span id="errorMessage">Gagal mengunduh media.</span>
+    </div>
+
+    <!-- Result Card -->
+    <div id="resultCard" class="hidden glass-card rounded-2xl p-6 space-y-6">
+      <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <span id="resPlatform" class="inline-block px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 mb-2">Platform</span>
+          <h3 id="resTitle" class="text-base md:text-lg font-bold text-slate-100 line-clamp-2">Judul Media</h3>
+          <p id="resAuthor" class="text-xs text-slate-400 mt-1">Creator</p>
+        </div>
+      </div>
+
+      <!-- Media Preview Container -->
+      <div id="mediaPreview" class="rounded-xl overflow-hidden bg-slate-900/80 flex items-center justify-center max-h-[420px]">
+        <!-- Injected dynamically: Video, Images Grid, or Audio Player -->
+      </div>
+
+      <!-- Action Buttons -->
+      <div id="actionButtons" class="flex flex-wrap gap-3 pt-2">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3">
+      <p>© 2026 Whats-Tok. Built by <span class="text-slate-300 font-medium">Muhammad Athalla</span>.</p>
+      <div class="flex gap-4">
+        <span>Dual Platform: WhatsApp Native + Web</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+
+    const form = document.getElementById('downloadForm');
+    const urlInput = document.getElementById('urlInput');
+    const pasteBtn = document.getElementById('pasteBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const resultCard = document.getElementById('resultCard');
+    const resPlatform = document.getElementById('resPlatform');
+    const resTitle = document.getElementById('resTitle');
+    const resAuthor = document.getElementById('resAuthor');
+    const mediaPreview = document.getElementById('mediaPreview');
+    const actionButtons = document.getElementById('actionButtons');
+
+    // Paste from clipboard
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          urlInput.value = text.trim();
+        }
+      } catch (err) {
+        alert('Izinkan akses clipboard browser untuk menggunakan tombol paste.');
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      // Reset state
+      errorAlert.classList.add('hidden');
+      resultCard.classList.add('hidden');
+      loading.classList.remove('hidden');
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Gagal memproses link.');
+        }
+
+        renderResult(data);
+      } catch (err) {
+        errorMessage.textContent = err.message;
+        errorAlert.classList.remove('hidden');
+      } finally {
+        loading.classList.add('hidden');
+        submitBtn.disabled = false;
+        lucide.createIcons();
+      }
+    });
+
+    function renderResult(data) {
+      resPlatform.textContent = data.platform.toUpperCase();
+      resTitle.textContent = data.title || 'Untitled Media';
+      resAuthor.textContent = data.author || data.artist || '';
+
+      mediaPreview.innerHTML = '';
+      actionButtons.innerHTML = '';
+
+      // 1. SPOTIFY AUDIO
+      if (data.platform === 'spotify') {
+        mediaPreview.innerHTML = `
+          <div class="p-6 flex flex-col items-center text-center space-y-4">
+            <img src="${data.cover || ''}" class="w-44 h-44 rounded-xl shadow-xl object-cover" />
+            <div>
+              <p class="font-bold text-base text-slate-100">${data.title}</p>
+              <p class="text-xs text-slate-400">${data.artist} - ${data.album || ''}</p>
+            </div>
+            ${data.downloadUrl ? `<audio controls class="w-full max-w-md mt-2"><source src="${data.downloadUrl}" type="audio/mpeg"></audio>` : ''}
+          </div>
+        `;
+
+        if (data.downloadUrl) {
+          actionButtons.innerHTML += `
+            <a href="/api/proxy?url=${encodeURIComponent(data.downloadUrl)}&filename=${encodeURIComponent(data.fileName || 'spotify.mp3')}" class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="music" class="w-4 h-4"></i> Download Lagu MP3
+            </a>
+          `;
+        }
+      }
+
+      // 2. VIDEO (TikTok / Instagram / YouTube / Twitter / Pinterest / Facebook)
+      else if (data.videoUrl) {
+        mediaPreview.innerHTML = `
+          <video controls class="w-full max-h-[400px] object-contain rounded-xl">
+            <source src="${data.videoUrl}" type="video/mp4">
+          </video>
+        `;
+
+        actionButtons.innerHTML += `
+          <a href="/api/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}" class="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
+            <i data-lucide="video" class="w-4 h-4"></i> Download Video HD
+          </a>
+        `;
+
+        if (data.musicUrl) {
+          actionButtons.innerHTML += `
+            <a href="/api/proxy?url=${encodeURIComponent(data.musicUrl)}&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}" class="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="music" class="w-4 h-4"></i> Download Audio
+            </a>
+          `;
+        }
+      }
+
+      // 3. MULTIPLE IMAGES (TikTok Slide / Instagram Carousel / Twitter Photos)
+      else if (data.images && data.images.length > 0) {
+        const total = data.images.length;
+        mediaPreview.innerHTML = `
+          <div class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto max-h-[380px] w-full">
+            ${data.images.map((img, i) => `
+              <div class="relative group rounded-lg overflow-hidden border border-slate-800">
+                <img src="${img}" class="w-full h-36 object-cover" />
+                <a href="/api/proxy?url=${encodeURIComponent(img)}&filename=foto_${i+1}.jpg" class="absolute bottom-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-md text-xs">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        actionButtons.innerHTML += `
+          <div class="w-full text-xs text-slate-400 mb-1">Ditemukan ${total} foto. Klik tombol unduh pada setiap foto atau unduh di bawah:</div>
+        `;
+      }
+
+      // 4. SINGLE IMAGE (Pinterest / IG Photo)
+      else if (data.imageUrl) {
+        mediaPreview.innerHTML = `
+          <img src="${data.imageUrl}" class="w-full max-h-[400px] object-contain rounded-xl" />
+        `;
+
+        actionButtons.innerHTML += `
+          <a href="/api/proxy?url=${encodeURIComponent(data.imageUrl)}&filename=pinterest_image.jpg" class="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
+            <i data-lucide="image" class="w-4 h-4"></i> Download Foto HD
+          </a>
+        `;
+      }
+
+      resultCard.classList.remove('hidden');
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

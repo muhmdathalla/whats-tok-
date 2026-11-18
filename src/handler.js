@@ -1,13 +1,13 @@
 import { downloadTikTok } from './lib/tiktok.js';
 import { downloadInstagram } from './lib/instagram.js';
 import { downloadYouTube } from './lib/youtube.js';
+import { downloadSpotify } from './lib/spotify.js';
+import { downloadTwitter } from './lib/twitter.js';
+import { downloadPinterest } from './lib/pinterest.js';
+import { downloadFacebook } from './lib/facebook.js';
+import { PATTERNS } from './lib/downloader.js';
 import { delay, extractUrls, getBuffer } from './utils/helpers.js';
 import { config } from './config.js';
-
-// Regex link detectors
-const TIKTOK_REGEX = /(?:https?:\/\/)?(?:www\.|vm\.|vt\.|t\.)?tiktok\.com\/[^\s]+/i;
-const INSTAGRAM_REGEX = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:p|reel|reels|stories|tv|share)\/[^\s]+/i;
-const YOUTUBE_REGEX = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[^\s]+/i;
 
 /**
  * Handle incoming WhatsApp message
@@ -58,6 +58,9 @@ export async function handleMessage(sock, m) {
 
     console.log(`📩 [Link Terdeteksi di Kontak You]: "${urls[0]}"`);
 
+    // Deteksi opsi "audio/mp3 only"
+    const isAudioOnly = /mp3|audio|lagu|musik/i.test(text);
+
     // Tujuan pengiriman harus selalu format @s.whatsapp.net (bukan internal @lid iOS)
     const targetJid = isSelfChat ? `${botPhone}@s.whatsapp.net` : (jid.endsWith('@lid') ? `${botPhone}@s.whatsapp.net` : jid);
 
@@ -67,21 +70,45 @@ export async function handleMessage(sock, m) {
     }
 
     for (const url of urls) {
-      // 1. TIKTOK (Video & Photo Slides)
-      if (TIKTOK_REGEX.test(url)) {
-        await handleTikTok(sock, targetJid, url);
+      // 1. SPOTIFY (Music / Audio MP3)
+      if (PATTERNS.SPOTIFY.test(url)) {
+        await handleSpotify(sock, targetJid, url);
         break;
       }
 
-      // 2. INSTAGRAM (Reels, Single Photo, Carousel Multi-photo)
-      if (INSTAGRAM_REGEX.test(url)) {
+      // 2. TIKTOK (Video, Photo Slides, Audio)
+      if (PATTERNS.TIKTOK.test(url)) {
+        await handleTikTok(sock, targetJid, url, isAudioOnly);
+        break;
+      }
+
+      // 3. INSTAGRAM (Reels, Single Photo, Carousel Multi-photo)
+      if (PATTERNS.INSTAGRAM.test(url)) {
         await handleInstagram(sock, targetJid, url);
         break;
       }
 
-      // 3. YOUTUBE (Video & Shorts)
-      if (YOUTUBE_REGEX.test(url)) {
-        await handleYouTube(sock, targetJid, url);
+      // 4. TWITTER / X (Video, GIF, Photos)
+      if (PATTERNS.TWITTER.test(url)) {
+        await handleTwitter(sock, targetJid, url);
+        break;
+      }
+
+      // 5. PINTEREST (HD Photo, Video Pin)
+      if (PATTERNS.PINTEREST.test(url)) {
+        await handlePinterest(sock, targetJid, url);
+        break;
+      }
+
+      // 6. FACEBOOK (Reels, Video)
+      if (PATTERNS.FACEBOOK.test(url)) {
+        await handleFacebook(sock, targetJid, url);
+        break;
+      }
+
+      // 7. YOUTUBE (Video, Shorts, MP3)
+      if (PATTERNS.YOUTUBE.test(url)) {
+        await handleYouTube(sock, targetJid, url, isAudioOnly);
         break;
       }
     }
@@ -91,12 +118,167 @@ export async function handleMessage(sock, m) {
 }
 
 /**
+ * Handler Spotify Music Downloader
+ */
+async function handleSpotify(sock, targetJid, url) {
+  console.log(`[Spotify] Mengunduh lagu: ${url}`);
+  try {
+    const data = await downloadSpotify(url);
+
+    // Kirim Cover Image + Info lagu
+    if (data.cover) {
+      await sock.sendMessage(targetJid, {
+        image: { url: data.cover },
+        caption: `🎵 *Spotify Music*\n📌 *Judul:* ${data.title}\n👤 *Artis:* ${data.artist}\n💿 *Album:* ${data.album || '-'}\n\n_Sedang mengirim file audio MP3..._`
+      });
+    }
+
+    // Kirim Audio MP3
+    if (data.buffer) {
+      await sock.sendMessage(targetJid, {
+        audio: data.buffer,
+        mimetype: 'audio/mp4',
+        fileName: data.fileName || `${data.title}.mp3`
+      });
+    } else if (data.downloadUrl) {
+      await sock.sendMessage(targetJid, {
+        audio: { url: data.downloadUrl },
+        mimetype: 'audio/mp4',
+        fileName: data.fileName || `${data.title}.mp3`
+      });
+    }
+
+    console.log(`[Spotify] Sukses mengirim lagu: ${data.title}`);
+  } catch (err) {
+    console.error('[Spotify Error]:', err.message);
+    await sock.sendMessage(targetJid, {
+      text: `❌ *Gagal mendownload Spotify:*\n${err.message}`
+    });
+  }
+}
+
+/**
+ * Handler Twitter / X
+ */
+async function handleTwitter(sock, targetJid, url) {
+  console.log(`[Twitter/X] Mengunduh: ${url}`);
+  try {
+    const data = await downloadTwitter(url);
+
+    // KASUS 1: Video
+    if (data.type === 'video' && data.videoUrl) {
+      await sock.sendMessage(targetJid, {
+        video: { url: data.videoUrl },
+        caption: `🐦 *Twitter/X Video*\n👤 *Author:* ${data.author}\n📝 *Tweet:* ${data.title ? data.title.slice(0, 150) : '-'}`
+      });
+      console.log('[Twitter/X] Sukses mengirim video');
+      return;
+    }
+
+    // KASUS 2: Photos (Album)
+    if (data.type === 'images' && Array.isArray(data.images) && data.images.length > 0) {
+      const total = data.images.length;
+      if (total === 1) {
+        await sock.sendMessage(targetJid, {
+          image: { url: data.images[0] },
+          caption: `🐦 *Twitter/X Photo*\n👤 *Author:* ${data.author}\n📝 *Tweet:* ${data.title ? data.title.slice(0, 150) : '-'}`
+        });
+      } else {
+        const imageBuffers = await Promise.all(
+          data.images.map(imgUrl => getBuffer(imgUrl))
+        );
+
+        await Promise.all(
+          imageBuffers.map((buf, idx) =>
+            sock.sendMessage(targetJid, {
+              image: buf,
+              caption: idx === 0 ? `🐦 *Twitter/X Album (${total} Foto)*\n👤 *Author:* ${data.author}\n📝 *Tweet:* ${data.title ? data.title.slice(0, 150) : '-'}` : undefined
+            })
+          )
+        );
+      }
+      console.log(`[Twitter/X] Sukses mengirim ${total} foto`);
+      return;
+    }
+
+    throw new Error('Media Twitter tidak dikenali.');
+  } catch (err) {
+    console.error('[Twitter Error]:', err.message);
+    await sock.sendMessage(targetJid, {
+      text: `❌ *Gagal mendownload Twitter/X:*\n${err.message}`
+    });
+  }
+}
+
+/**
+ * Handler Pinterest
+ */
+async function handlePinterest(sock, targetJid, url) {
+  console.log(`[Pinterest] Mengunduh: ${url}`);
+  try {
+    const data = await downloadPinterest(url);
+
+    if (data.type === 'video' && data.videoUrl) {
+      await sock.sendMessage(targetJid, {
+        video: { url: data.videoUrl },
+        caption: `📌 *Pinterest Video*\n📝 *Title:* ${data.title}`
+      });
+    } else if (data.imageUrl) {
+      await sock.sendMessage(targetJid, {
+        image: { url: data.imageUrl },
+        caption: `📌 *Pinterest HD Photo*\n📝 *Title:* ${data.title}`
+      });
+    }
+
+    console.log('[Pinterest] Sukses mengirim media');
+  } catch (err) {
+    console.error('[Pinterest Error]:', err.message);
+    await sock.sendMessage(targetJid, {
+      text: `❌ *Gagal mendownload Pinterest:*\n${err.message}`
+    });
+  }
+}
+
+/**
+ * Handler Facebook
+ */
+async function handleFacebook(sock, targetJid, url) {
+  console.log(`[Facebook] Mengunduh: ${url}`);
+  try {
+    const data = await downloadFacebook(url);
+
+    await sock.sendMessage(targetJid, {
+      video: { url: data.videoUrl },
+      caption: `🎬 *Facebook Video / Reels*\n📝 *Title:* ${data.title}`
+    });
+
+    console.log('[Facebook] Sukses mengirim video');
+  } catch (err) {
+    console.error('[Facebook Error]:', err.message);
+    await sock.sendMessage(targetJid, {
+      text: `❌ *Gagal mendownload Facebook:*\n${err.message}`
+    });
+  }
+}
+
+/**
  * Handler TikTok
  */
-async function handleTikTok(sock, targetJid, url) {
-  console.log(`[TikTok] Mengunduh: ${url}`);
+async function handleTikTok(sock, targetJid, url, isAudioOnly = false) {
+  console.log(`[TikTok] Mengunduh: ${url} (audioOnly: ${isAudioOnly})`);
   try {
     const data = await downloadTikTok(url);
+
+    // Jika user minta audio saja dan audio tersedia
+    if (isAudioOnly && data.musicUrl) {
+      await sock.sendMessage(targetJid, {
+        audio: { url: data.musicUrl },
+        mimetype: 'audio/mp4',
+        fileName: `${data.title || 'tiktok_audio'}.mp3`,
+        caption: `🎵 *TikTok Audio Only*\n👤 *Creator:* ${data.author}\n📝 *Title:* ${data.title || '-'}`
+      });
+      return;
+    }
 
     // KASUS 1: Postingan Foto Slide (Bisa 1 atau banyak foto)
     if (data.type === 'images' && Array.isArray(data.images) && data.images.length > 0) {
@@ -114,8 +296,6 @@ async function handleTikTok(sock, targetJid, url) {
         );
 
         // Kirim semua foto secara serentak (Promise.all)
-        // Hanya foto pertama yang diberi caption, foto lainnya tanpa caption
-        // sehingga WhatsApp otomatis menyatukan semuanya menjadi SATU KOTAK ALBUM FOTO (Grid)!
         await Promise.all(
           imageBuffers.map((buf, idx) =>
             sock.sendMessage(targetJid, {
@@ -195,8 +375,6 @@ async function handleInstagram(sock, targetJid, url) {
     const imageUrls = data.items.filter(i => i.type === 'image').map(i => i.url);
     const videoItems = data.items.filter(i => i.type === 'video');
 
-    // Jika ada foto, kirim semua foto secara serentak (Promise.all)
-    // agar WhatsApp otomatis menggabungkannya jadi 1 kotak Album Foto di chat
     if (imageUrls.length > 0) {
       const imageBuffers = await Promise.all(
         imageUrls.map(imgUrl => getBuffer(imgUrl))
@@ -212,7 +390,6 @@ async function handleInstagram(sock, targetJid, url) {
       );
     }
 
-    // Jika ada video di dalam carousel
     for (const v of videoItems) {
       await sock.sendMessage(targetJid, {
         video: { url: v.url },
@@ -232,13 +409,24 @@ async function handleInstagram(sock, targetJid, url) {
 /**
  * Handler YouTube
  */
-async function handleYouTube(sock, targetJid, url) {
-  console.log(`[YouTube] Mengunduh: ${url}`);
+async function handleYouTube(sock, targetJid, url, isAudioOnly = false) {
+  console.log(`[YouTube] Mengunduh: ${url} (audioOnly: ${isAudioOnly})`);
   try {
     const data = await downloadYouTube(url);
 
     if (!data.videoUrl) {
       throw new Error('Link download video YouTube tidak ditemukan.');
+    }
+
+    // Jika minta audio saja
+    if (isAudioOnly) {
+      await sock.sendMessage(targetJid, {
+        audio: { url: data.videoUrl },
+        mimetype: 'audio/mp4',
+        fileName: `${data.title}.mp3`
+      });
+      console.log('[YouTube] Sukses mengirim audio YouTube');
+      return;
     }
 
     await sock.sendMessage(targetJid, {
