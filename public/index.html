@@ -2,12 +2,18 @@
 <html lang="id" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Whats-Tok - Universal Social Media Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#030712" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Whats-Tok" />
+  <title>Whats-Tok - Universal Media Downloader</title>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -26,155 +32,227 @@
       }
     }
   </script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+    
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
     }
-    .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Prevent auto-zoom on iOS inputs */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+
+    .glass {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+
+    .gradient-brand {
+      background: linear-gradient(135deg, #8b5cf6 0%, #38bdf8 100%);
+    }
+
     .gradient-text {
-      background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 50%, #f472b6 100%);
+      background: linear-gradient(135deg, #c084fc 0%, #60a5fa 50%, #f472b6 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+
+    /* Custom touch scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 9999px;
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col selection:bg-purple-500 selection:text-white pb-6">
 
-  <!-- Glow Background Effects -->
+  <!-- Glow Accents -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-600/20 blur-[140px] rounded-full"></div>
-    <div class="absolute top-96 left-10 w-[350px] h-[350px] bg-sky-600/15 blur-[120px] rounded-full"></div>
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[340px] md:w-[600px] h-[340px] bg-purple-600/20 blur-[120px] rounded-full"></div>
+    <div class="absolute bottom-10 -right-20 w-[240px] h-[240px] bg-sky-600/15 blur-[100px] rounded-full"></div>
   </div>
 
-  <!-- Navbar -->
-  <header class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50 bg-slate-950/80">
-    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
-        </div>
-        <span class="text-xl font-extrabold tracking-tight">Whats<span class="text-purple-400">Tok</span></span>
+  <!-- Mobile-Optimized Top Navbar -->
+  <header class="sticky top-0 z-50 glass border-b border-gray-800/80 px-4 h-14 md:h-16 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl gradient-brand flex items-center justify-center shadow-md shadow-purple-500/20">
+        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
       </div>
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/muhmdathalla/whats-tok-" target="_blank" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-sm font-medium hover:text-white text-slate-300 transition-all">
-          <i data-lucide="github" class="w-4 h-4"></i>
-          <span>GitHub</span>
-        </a>
+      <div>
+        <span class="text-lg md:text-xl font-extrabold tracking-tight">Whats<span class="text-purple-400">Tok</span></span>
       </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <a href="https://github.com/muhmdathalla/whats-tok-" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-800 bg-gray-900/80 text-xs font-semibold text-gray-300 hover:text-white active:scale-95 transition-all">
+        <i data-lucide="github" class="w-3.5 h-3.5"></i>
+        <span>Repo</span>
+      </a>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <main class="flex-1 max-w-4xl mx-auto px-4 py-12 md:py-16 w-full">
-    <div class="text-center space-y-4 mb-10">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-xs font-semibold text-purple-300">
-        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-        Platform Downloader All-in-One
-      </div>
-      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
-        Download Video, Foto & Musik <br />
-        <span class="gradient-text">Tanpa Batasan Kualitas</span>
-      </h1>
-      <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
-        Unduh video TikTok tanpa watermark, album foto Instagram, musik Spotify, tweet Twitter/X, Pinterest, dan YouTube gratis.
-      </p>
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-xl mx-auto px-4 pt-6 md:pt-10 w-full space-y-6">
 
-      <!-- Supported Badges -->
-      <div class="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs font-medium text-slate-400">
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">TikTok (Video & Slide)</span>
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Instagram (Reels & Carousel)</span>
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Spotify (MP3)</span>
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">YouTube</span>
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Twitter / X</span>
-        <span class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Pinterest</span>
+    <!-- Mobile Hero Header -->
+    <div class="text-center space-y-2.5">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-[11px] font-bold text-purple-300 tracking-wide">
+        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+        INSTANT MEDIA DOWNLOADER
       </div>
+      
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-snug">
+        Download Apapun <br />
+        <span class="gradient-text">Langsung ke HP Kamu</span>
+      </h1>
+      
+      <p class="text-gray-400 text-xs sm:text-sm px-2">
+        Salin tautan dari TikTok, Instagram, Spotify, X, Pinterest, atau YouTube. Tanpa iklan & tanpa ribet.
+      </p>
     </div>
 
-    <!-- Downloader Box -->
-    <div class="glass-card rounded-2xl p-3 md:p-4 shadow-2xl shadow-purple-500/5 mb-10">
-      <form id="downloadForm" class="flex flex-col md:flex-row gap-3">
-        <div class="relative flex-1">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-            <i data-lucide="link" class="w-5 h-5"></i>
-          </div>
+    <!-- Supported Platforms Scrollable Chips (Touch friendly) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 px-1 no-scrollbar text-[11px] font-medium text-gray-300">
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span> TikTok
+      </span>
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-pink-500"></span> Instagram
+      </span>
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Spotify
+      </span>
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-red-500"></span> YouTube
+      </span>
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-sky-400"></span> Twitter / X
+      </span>
+      <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800">
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Pinterest
+      </span>
+    </div>
+
+    <!-- Mobile-First Input Card -->
+    <div class="glass rounded-2xl p-3 sm:p-4 shadow-xl border border-gray-800/80 space-y-3">
+      <form id="downloadForm" class="space-y-3">
+        <div class="relative">
           <input
             id="urlInput"
             type="url"
             required
-            placeholder="Tempel tautan TikTok, Instagram, Spotify, YouTube..."
-            class="w-full pl-11 pr-24 py-3.5 bg-slate-900/90 border border-slate-800 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-slate-100 placeholder-slate-500 text-sm md:text-base transition-all"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Tempel tautan video, foto, atau lagu..."
+            class="w-full pl-4 pr-24 py-3.5 bg-gray-900/90 border border-gray-800 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-gray-100 placeholder-gray-500 text-sm transition-all"
           />
-          <button
-            type="button"
-            id="pasteBtn"
-            class="absolute inset-y-1.5 right-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-all"
-          >
-            <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
-            <span>Paste</span>
-          </button>
+          <div class="absolute inset-y-1.5 right-1.5 flex items-center gap-1">
+            <button
+              type="button"
+              id="clearBtn"
+              class="hidden p-2 text-gray-500 hover:text-gray-300 rounded-lg text-xs"
+              title="Hapus"
+            >
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <button
+              type="button"
+              id="pasteBtn"
+              class="px-2.5 py-1.5 bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 text-xs font-semibold rounded-lg flex items-center gap-1 border border-purple-500/30 active:scale-95 transition-all"
+            >
+              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+              <span>Tempel</span>
+            </button>
+          </div>
         </div>
+
         <button
           id="submitBtn"
           type="submit"
-          class="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl text-sm md:text-base flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-[0.98] text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <i data-lucide="download" class="w-4 h-4"></i>
-          <span>Unduh</span>
+          <i data-lucide="arrow-down-circle" class="w-5 h-5"></i>
+          <span>Download Sekarang</span>
         </button>
       </form>
     </div>
 
-    <!-- Loading Skeleton -->
-    <div id="loading" class="hidden glass-card rounded-2xl p-8 text-center space-y-4">
+    <!-- Mobile Loading Indicator -->
+    <div id="loading" class="hidden glass rounded-2xl p-6 text-center space-y-3 animate-pulse">
       <div class="inline-block animate-spin text-purple-400">
-        <i data-lucide="loader-2" class="w-8 h-8"></i>
+        <i data-lucide="loader-2" class="w-7 h-7"></i>
       </div>
-      <p class="text-slate-300 font-medium text-sm">Sedang mengambil media langsung dari sumbernya...</p>
+      <p class="text-gray-300 font-semibold text-xs sm:text-sm">Menghubungkan ke platform & memproses media...</p>
     </div>
 
-    <!-- Error Alert -->
-    <div id="errorAlert" class="hidden rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300 text-sm mb-6 flex items-start gap-3">
-      <i data-lucide="alert-circle" class="w-5 h-5 shrink-0 text-rose-400 mt-0.5"></i>
-      <span id="errorMessage">Gagal mengunduh media.</span>
+    <!-- Error Alert Card -->
+    <div id="errorAlert" class="hidden rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300 text-xs sm:text-sm flex items-start gap-2.5">
+      <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400 mt-0.5"></i>
+      <div class="flex-1">
+        <p class="font-bold">Gagal Mengunduh</p>
+        <p id="errorMessage" class="text-xs text-rose-400/90 mt-0.5">Pastikan tautan bersifat publik dan masih aktif.</p>
+      </div>
     </div>
 
-    <!-- Result Card -->
-    <div id="resultCard" class="hidden glass-card rounded-2xl p-6 space-y-6">
-      <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
-        <div>
-          <span id="resPlatform" class="inline-block px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 mb-2">Platform</span>
-          <h3 id="resTitle" class="text-base md:text-lg font-bold text-slate-100 line-clamp-2">Judul Media</h3>
-          <p id="resAuthor" class="text-xs text-slate-400 mt-1">Creator</p>
+    <!-- Result Card (Optimized for Android & iPhone Touch) -->
+    <div id="resultCard" class="hidden glass rounded-2xl p-4 sm:p-5 space-y-4 border border-purple-500/20 shadow-2xl">
+      <!-- Media Header Info -->
+      <div class="flex items-center justify-between gap-3 border-b border-gray-800/80 pb-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span id="resPlatform" class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              PLATFORM
+            </span>
+            <span id="resTypeBadge" class="text-[10px] text-gray-400 uppercase font-semibold">Video</span>
+          </div>
+          <h3 id="resTitle" class="text-sm font-bold text-gray-100 truncate">Judul Media</h3>
+          <p id="resAuthor" class="text-xs text-gray-400 truncate mt-0.5">Creator</p>
         </div>
       </div>
 
-      <!-- Media Preview Container -->
-      <div id="mediaPreview" class="rounded-xl overflow-hidden bg-slate-900/80 flex items-center justify-center max-h-[420px]">
-        <!-- Injected dynamically: Video, Images Grid, or Audio Player -->
+      <!-- Media Preview Area -->
+      <div id="mediaPreview" class="rounded-xl overflow-hidden bg-gray-900 flex items-center justify-center">
+        <!-- Injected dynamically -->
       </div>
 
-      <!-- Action Buttons -->
-      <div id="actionButtons" class="flex flex-wrap gap-3 pt-2">
+      <!-- Action Buttons (Big Touch Targets) -->
+      <div id="actionButtons" class="flex flex-col gap-2.5 pt-1">
         <!-- Injected dynamically -->
       </div>
     </div>
-  </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3">
-      <p>© 2026 Whats-Tok. Built by <span class="text-slate-300 font-medium">Muhammad Athalla</span>.</p>
-      <div class="flex gap-4">
-        <span>Dual Platform: WhatsApp Native + Web</span>
+    <!-- Quick Tips for iPhone & Android Users -->
+    <div class="glass rounded-xl p-3.5 text-xs text-gray-400 border border-gray-800/60 flex items-start gap-2.5">
+      <i data-lucide="smartphone" class="w-4 h-4 text-purple-400 shrink-0 mt-0.5"></i>
+      <div>
+        <span class="font-bold text-gray-300">Tips Penggunaan di HP:</span>
+        <p class="text-[11px] text-gray-400 mt-0.5">
+          Di <strong>iPhone (Safari)</strong>, kamu juga bisa tap tombol <em>Share $\rightarrow$ Add to Home Screen</em> agar Whats-Tok jadi seperti aplikasi bawaan di HP!
+        </p>
       </div>
     </div>
-  </footer>
+
+  </main>
 
   <script>
     lucide.createIcons();
@@ -182,26 +260,49 @@
     const form = document.getElementById('downloadForm');
     const urlInput = document.getElementById('urlInput');
     const pasteBtn = document.getElementById('pasteBtn');
+    const clearBtn = document.getElementById('clearBtn');
     const submitBtn = document.getElementById('submitBtn');
     const loading = document.getElementById('loading');
     const errorAlert = document.getElementById('errorAlert');
     const errorMessage = document.getElementById('errorMessage');
     const resultCard = document.getElementById('resultCard');
     const resPlatform = document.getElementById('resPlatform');
+    const resTypeBadge = document.getElementById('resTypeBadge');
     const resTitle = document.getElementById('resTitle');
     const resAuthor = document.getElementById('resAuthor');
     const mediaPreview = document.getElementById('mediaPreview');
     const actionButtons = document.getElementById('actionButtons');
 
-    // Paste from clipboard
+    // Toggle clear button
+    urlInput.addEventListener('input', () => {
+      if (urlInput.value.trim().length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      urlInput.value = '';
+      clearBtn.classList.add('hidden');
+      urlInput.focus();
+    });
+
+    // 1-Click Paste button for mobile & desktop
     pasteBtn.addEventListener('click', async () => {
       try {
         const text = await navigator.clipboard.readText();
         if (text) {
           urlInput.value = text.trim();
+          clearBtn.classList.remove('hidden');
+          // Auto submit if valid URL pasted for ultra-convenient UX
+          if (text.startsWith('http://') || text.startsWith('https://')) {
+            form.requestSubmit();
+          }
         }
       } catch (err) {
-        alert('Izinkan akses clipboard browser untuk menggunakan tombol paste.');
+        // Fallback: focus input if clipboard permission is denied
+        urlInput.focus();
       }
     });
 
@@ -215,6 +316,9 @@
       resultCard.classList.add('hidden');
       loading.classList.remove('hidden');
       submitBtn.disabled = true;
+
+      // Scroll to loading on mobile
+      loading.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
       try {
         const response = await fetch('/api/download', {
@@ -233,6 +337,7 @@
       } catch (err) {
         errorMessage.textContent = err.message;
         errorAlert.classList.remove('hidden');
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } finally {
         loading.classList.add('hidden');
         submitBtn.disabled = false;
@@ -241,7 +346,7 @@
     });
 
     function renderResult(data) {
-      resPlatform.textContent = data.platform.toUpperCase();
+      resPlatform.textContent = (data.platform || 'MEDIA').toUpperCase();
       resTitle.textContent = data.title || 'Untitled Media';
       resAuthor.textContent = data.author || data.artist || '';
 
@@ -250,20 +355,21 @@
 
       // 1. SPOTIFY AUDIO
       if (data.platform === 'spotify') {
+        resTypeBadge.textContent = 'Audio Musik';
         mediaPreview.innerHTML = `
-          <div class="p-6 flex flex-col items-center text-center space-y-4">
-            <img src="${data.cover || ''}" class="w-44 h-44 rounded-xl shadow-xl object-cover" />
+          <div class="p-5 flex flex-col items-center text-center space-y-3 w-full">
+            <img src="${data.cover || ''}" class="w-36 h-36 sm:w-44 sm:h-44 rounded-xl shadow-2xl object-cover border border-gray-800" />
             <div>
-              <p class="font-bold text-base text-slate-100">${data.title}</p>
-              <p class="text-xs text-slate-400">${data.artist} - ${data.album || ''}</p>
+              <p class="font-bold text-sm sm:text-base text-gray-100">${data.title}</p>
+              <p class="text-xs text-gray-400">${data.artist} ${data.album ? '• ' + data.album : ''}</p>
             </div>
-            ${data.downloadUrl ? `<audio controls class="w-full max-w-md mt-2"><source src="${data.downloadUrl}" type="audio/mpeg"></audio>` : ''}
+            ${data.downloadUrl ? `<audio controls playsinline class="w-full max-w-sm mt-1"><source src="${data.downloadUrl}" type="audio/mpeg"></audio>` : ''}
           </div>
         `;
 
         if (data.downloadUrl) {
           actionButtons.innerHTML += `
-            <a href="/api/proxy?url=${encodeURIComponent(data.downloadUrl)}&filename=${encodeURIComponent(data.fileName || 'spotify.mp3')}" class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
+            <a href="/api/proxy?url=${encodeURIComponent(data.downloadUrl)}&filename=${encodeURIComponent(data.fileName || 'spotify.mp3')}" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all">
               <i data-lucide="music" class="w-4 h-4"></i> Download Lagu MP3
             </a>
           `;
@@ -272,22 +378,23 @@
 
       // 2. VIDEO (TikTok / Instagram / YouTube / Twitter / Pinterest / Facebook)
       else if (data.videoUrl) {
+        resTypeBadge.textContent = 'Video HD';
         mediaPreview.innerHTML = `
-          <video controls class="w-full max-h-[400px] object-contain rounded-xl">
+          <video controls playsinline preload="metadata" class="w-full max-h-[360px] object-contain rounded-xl bg-black">
             <source src="${data.videoUrl}" type="video/mp4">
           </video>
         `;
 
         actionButtons.innerHTML += `
-          <a href="/api/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}" class="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
-            <i data-lucide="video" class="w-4 h-4"></i> Download Video HD
+          <a href="/api/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}" class="w-full py-3.5 px-4 bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i> Download Video HD (Tanpa Watermark)
           </a>
         `;
 
         if (data.musicUrl) {
           actionButtons.innerHTML += `
-            <a href="/api/proxy?url=${encodeURIComponent(data.musicUrl)}&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}" class="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium flex items-center justify-center gap-2 transition-all">
-              <i data-lucide="music" class="w-4 h-4"></i> Download Audio
+            <a href="/api/proxy?url=${encodeURIComponent(data.musicUrl)}&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}" class="w-full py-3 px-4 bg-gray-900 border border-gray-800 hover:bg-gray-800 active:scale-[0.98] text-gray-200 rounded-xl font-semibold text-xs text-center flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="music" class="w-3.5 h-3.5"></i> Download Lagu Saja (Audio)
             </a>
           `;
         }
@@ -296,13 +403,16 @@
       // 3. MULTIPLE IMAGES (TikTok Slide / Instagram Carousel / Twitter Photos)
       else if (data.images && data.images.length > 0) {
         const total = data.images.length;
+        resTypeBadge.textContent = `${total} Foto (Album)`;
+
         mediaPreview.innerHTML = `
-          <div class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto max-h-[380px] w-full">
+          <div class="p-3 grid grid-cols-2 sm:grid-cols-3 gap-2.5 overflow-y-auto max-h-[380px] w-full">
             ${data.images.map((img, i) => `
-              <div class="relative group rounded-lg overflow-hidden border border-slate-800">
-                <img src="${img}" class="w-full h-36 object-cover" />
-                <a href="/api/proxy?url=${encodeURIComponent(img)}&filename=foto_${i+1}.jpg" class="absolute bottom-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-md text-xs">
+              <div class="relative group rounded-xl overflow-hidden border border-gray-800 bg-gray-950">
+                <img src="${img}" loading="lazy" class="w-full h-32 sm:h-36 object-cover" />
+                <a href="/api/proxy?url=${encodeURIComponent(img)}&filename=foto_${i+1}.jpg" class="absolute bottom-1.5 right-1.5 p-2 bg-black/80 text-white rounded-lg text-xs flex items-center gap-1 font-semibold active:scale-95 shadow">
                   <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span>Simpan</span>
                 </a>
               </div>
             `).join('')}
@@ -310,24 +420,28 @@
         `;
 
         actionButtons.innerHTML += `
-          <div class="w-full text-xs text-slate-400 mb-1">Ditemukan ${total} foto. Klik tombol unduh pada setiap foto atau unduh di bawah:</div>
+          <div class="text-xs text-center text-gray-400 py-1 font-medium">
+            💡 Tap tombol <strong>Simpan</strong> pada masing-masing foto di atas untuk menyimpannya ke galeri HP kamu!
+          </div>
         `;
       }
 
       // 4. SINGLE IMAGE (Pinterest / IG Photo)
       else if (data.imageUrl) {
+        resTypeBadge.textContent = 'Foto HD';
         mediaPreview.innerHTML = `
-          <img src="${data.imageUrl}" class="w-full max-h-[400px] object-contain rounded-xl" />
+          <img src="${data.imageUrl}" class="w-full max-h-[380px] object-contain rounded-xl" />
         `;
 
         actionButtons.innerHTML += `
-          <a href="/api/proxy?url=${encodeURIComponent(data.imageUrl)}&filename=pinterest_image.jpg" class="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
-            <i data-lucide="image" class="w-4 h-4"></i> Download Foto HD
+          <a href="/api/proxy?url=${encodeURIComponent(data.imageUrl)}&filename=foto_hd.jpg" class="w-full py-3.5 px-4 bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i> Download Foto Resolusi Penuh
           </a>
         `;
       }
 
       resultCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       lucide.createIcons();
     }
   </script>
