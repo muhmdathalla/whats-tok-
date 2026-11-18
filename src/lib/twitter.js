@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /**
- * Download Twitter / X Media (Video, GIF, Photos)
+ * Download Twitter / X Media (Video, GIF, Photos) with quality options
  * @param {string} url - Twitter / X post URL
  */
 export async function downloadTwitter(url) {
@@ -28,7 +28,6 @@ export async function downloadTwitter(url) {
     const title = tweet.text || 'Twitter / X Media';
     const author = `${tweet.author?.name || user} (@${tweet.author?.screen_name || user})`;
 
-    // Cek media (videos / photos)
     const media = tweet.media;
     if (!media) {
       throw new Error('Tidak ada media (foto/video) pada postingan tweet ini.');
@@ -37,24 +36,54 @@ export async function downloadTwitter(url) {
     // 1. Jika ada video
     if (media.videos && media.videos.length > 0) {
       const bestVideo = media.videos[0];
+      const formats = [];
+
+      formats.push({
+        label: 'High-Definition Video (MP4)',
+        quality: 'HD Original',
+        type: 'video',
+        ext: 'mp4',
+        url: bestVideo.url
+      });
+
+      if (bestVideo.thumbnail_url) {
+        formats.push({
+          label: 'Video Thumbnail Cover',
+          quality: 'HD',
+          type: 'image',
+          ext: 'jpg',
+          url: bestVideo.thumbnail_url
+        });
+      }
+
       return {
         type: 'video',
         title,
         author,
         videoUrl: bestVideo.url,
-        thumbnail: bestVideo.thumbnail_url
+        thumbnail: bestVideo.thumbnail_url,
+        formats
       };
     }
 
     // 2. Jika ada foto
     if (media.photos && media.photos.length > 0) {
       const images = media.photos.map(p => p.url).filter(Boolean);
+      const formats = images.map((img, idx) => ({
+        label: `Photo #${idx + 1} (Original Ultra HD)`,
+        quality: 'Original HD',
+        type: 'image',
+        ext: 'jpg',
+        url: img.includes('?') ? `${img}&name=orig` : `${img}?name=orig`
+      }));
+
       return {
         type: 'images',
         title,
         author,
         images,
-        count: images.length
+        count: images.length,
+        formats
       };
     }
 

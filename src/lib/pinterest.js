@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 /**
- * Download Pinterest Media (HD Image / Video)
+ * Download Pinterest Media (HD Image / Video) with multiple resolutions
  * @param {string} rawUrl - Pinterest Pin URL or pin.it shortlink
  */
 export async function downloadPinterest(rawUrl) {
@@ -40,19 +40,63 @@ export async function downloadPinterest(rawUrl) {
       return {
         type: 'video',
         title: title.replace(' | Pinterest', '').trim(),
-        videoUrl: ogVideo
+        videoUrl: ogVideo,
+        thumbnail: ogImage,
+        formats: [
+          {
+            label: 'Pinterest Video (Original MP4)',
+            quality: 'HD Original',
+            type: 'video',
+            ext: 'mp4',
+            url: ogVideo
+          },
+          ...(ogImage ? [{
+            label: 'Cover Artwork (HD)',
+            quality: 'HD',
+            type: 'image',
+            ext: 'jpg',
+            url: ogImage
+          }] : [])
+        ]
       };
     }
 
-    // Jika gambar, ubah resolusi ke originals (kualitas tertinggi)
+    // Jika gambar, sediakan beberapa pilihan resolusi
     if (ogImage) {
-      // Pinterest URL format: https://i.pinimg.com/736x/... -> https://i.pinimg.com/originals/...
-      const hdImage = ogImage.replace(/\/\d+x\//, '/originals/');
+      const hdOriginal = ogImage.replace(/\/\d+x\//, '/originals/');
+      const std736 = ogImage.replace(/\/\d+x\//, '/736x/');
+      const medium474 = ogImage.replace(/\/\d+x\//, '/474x/');
+
+      const formats = [
+        {
+          label: 'Ultra HD Resolution (Originals)',
+          quality: 'Original 4K/HD',
+          type: 'image',
+          ext: 'jpg',
+          url: hdOriginal
+        },
+        {
+          label: 'High Resolution (736px)',
+          quality: '736px',
+          type: 'image',
+          ext: 'jpg',
+          url: std736
+        },
+        {
+          label: 'Mobile Compact (474px)',
+          quality: '474px',
+          type: 'image',
+          ext: 'jpg',
+          url: medium474
+        }
+      ];
+
       return {
         type: 'image',
         title: title.replace(' | Pinterest', '').trim(),
-        imageUrl: hdImage,
-        thumbnail: ogImage
+        imageUrl: hdOriginal,
+        thumbnail: ogImage,
+        formats
       };
     }
 

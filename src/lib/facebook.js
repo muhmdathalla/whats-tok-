@@ -2,20 +2,52 @@ import * as btch from 'btch-downloader';
 import axios from 'axios';
 
 /**
- * Download Facebook Video / Reels
+ * Download Facebook Video / Reels with multiple resolution options
  * @param {string} url - Facebook video / reels URL
  */
 export async function downloadFacebook(url) {
   // Method 1: btch-downloader fbdown
   try {
     const data = await btch.fbdown(url);
-    const videoUrl = data?.Normal_video || data?.HD || data?.video || data?.url;
-    if (videoUrl) {
+    const hd = data?.HD;
+    const normal = data?.Normal_video || data?.video || data?.url;
+
+    if (hd || normal) {
+      const formats = [];
+      if (hd) {
+        formats.push({
+          label: 'HD High Definition Video (720p/1080p)',
+          quality: 'HD',
+          type: 'video',
+          ext: 'mp4',
+          url: hd
+        });
+      }
+      if (normal) {
+        formats.push({
+          label: 'SD Standard Definition Video (360p)',
+          quality: 'SD',
+          type: 'video',
+          ext: 'mp4',
+          url: normal
+        });
+      }
+      if (data.audio) {
+        formats.push({
+          label: 'Extracted Audio Track (MP3)',
+          quality: 'Original',
+          type: 'audio',
+          ext: 'mp3',
+          url: data.audio
+        });
+      }
+
       return {
         type: 'video',
         title: data.title || 'Facebook Video',
-        videoUrl,
-        audio: data.audio
+        videoUrl: hd || normal,
+        audio: data.audio,
+        formats
       };
     }
   } catch (err) {
@@ -39,7 +71,16 @@ export async function downloadFacebook(url) {
         return {
           type: 'video',
           title: 'Facebook Video',
-          videoUrl: match[1]
+          videoUrl: match[1],
+          formats: [
+            {
+              label: 'Facebook Video (MP4)',
+              quality: 'HD',
+              type: 'video',
+              ext: 'mp4',
+              url: match[1]
+            }
+          ]
         };
       }
     }
