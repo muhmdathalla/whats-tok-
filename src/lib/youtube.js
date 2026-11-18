@@ -38,7 +38,7 @@ async function fetchOEmbedInfo(url) {
 }
 
 /**
- * Download YouTube video / shorts info and streams
+ * Download YouTube video / shorts info, formats, and streams
  * @param {string} url - YouTube URL
  */
 export async function downloadYouTube(url) {
@@ -64,6 +64,75 @@ export async function downloadYouTube(url) {
     // Audio-only format
     const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo);
 
+    // Build comprehensive format & resolution list for Web UI
+    const formats = [];
+    const seenQualities = new Set();
+
+    // 1. Progressive format (Combined Audio + Video)
+    if (progFormat) {
+      seenQualities.add(progFormat.qualityLabel || '360p');
+      formats.push({
+        label: `${progFormat.qualityLabel || '360p'} Standard (Video + Audio)`,
+        quality: progFormat.qualityLabel || '360p',
+        type: 'video',
+        ext: 'mp4',
+        itag: progFormat.itag,
+        url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${progFormat.itag}`
+      });
+    }
+
+    // 2. High Resolution Video Formats (1080p, 720p, 480p, etc.)
+    const videoFormats = info.formats.filter(f => f.hasVideo && f.container === 'mp4');
+    for (const f of videoFormats) {
+      if (f.qualityLabel && !seenQualities.has(f.qualityLabel)) {
+        seenQualities.add(f.qualityLabel);
+        formats.push({
+          label: `${f.qualityLabel} HD Stream`,
+          quality: f.qualityLabel,
+          type: 'video',
+          ext: 'mp4',
+          itag: f.itag,
+          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${f.itag}`
+        });
+      }
+    }
+
+    // 3. Audio Tracks & Bitrates (128kbps, 160kbps, etc.)
+    const audioFormats = info.formats.filter(f => f.hasAudio && !f.hasVideo);
+    const seenBitrates = new Set();
+    for (const f of audioFormats) {
+      const br = f.audioBitrate ? `${f.audioBitrate}kbps` : 'High';
+      if (!seenBitrates.has(br)) {
+        seenBitrates.add(br);
+        formats.push({
+          label: `Audio MP3 / M4A (${br})`,
+          quality: br,
+          type: 'audio',
+          ext: 'mp3',
+          itag: f.itag,
+          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${f.itag}&audio=1`
+        });
+      }
+    }
+
+    // 4. High-Res Thumbnail Artworks
+    if (cleanId) {
+      formats.push({
+        label: 'Cover Thumbnail (MaxRes HD)',
+        quality: '1080p',
+        type: 'image',
+        ext: 'jpg',
+        url: `https://i.ytimg.com/vi/${cleanId}/maxresdefault.jpg`
+      });
+      formats.push({
+        label: 'Cover Thumbnail (High Quality)',
+        quality: '720p',
+        type: 'image',
+        ext: 'jpg',
+        url: `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`
+      });
+    }
+
     return {
       type: 'video',
       title,
@@ -73,6 +142,7 @@ export async function downloadYouTube(url) {
       videoUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`,
       musicUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`,
       directUrl: progFormat?.url,
+      formats,
       // Helper functions for native server / bot streaming
       getStream: () => ytdl.download(info, {
         filter: f => (progFormat ? f.itag === progFormat.itag : (f.hasVideo && f.hasAudio))
@@ -94,7 +164,30 @@ export async function downloadYouTube(url) {
       author: oembed.author_name || 'YouTube Channel',
       thumbnail: oembed.thumbnail_url || `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`,
       videoUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`,
-      musicUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`
+      musicUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`,
+      formats: [
+        {
+          label: 'Default MP4 Video Stream',
+          quality: '360p',
+          type: 'video',
+          ext: 'mp4',
+          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`
+        },
+        {
+          label: 'Audio Track',
+          quality: '128kbps',
+          type: 'audio',
+          ext: 'mp3',
+          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`
+        },
+        {
+          label: 'HQ Thumbnail',
+          quality: 'HQ',
+          type: 'image',
+          ext: 'jpg',
+          url: oembed.thumbnail_url || `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`
+        }
+      ]
     };
   }
 

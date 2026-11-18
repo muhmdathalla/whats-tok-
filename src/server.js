@@ -63,7 +63,7 @@ app.post('/api/download', async (req, res) => {
  * Direct media streaming for YouTube videos and audio tracks
  */
 app.get('/api/stream/youtube', async (req, res) => {
-  const { url, audio, download, filename } = req.query;
+  const { url, audio, download, filename, itag } = req.query;
   if (!url) return res.status(400).send('Missing url parameter');
 
   try {
@@ -71,19 +71,27 @@ app.get('/api/stream/youtube', async (req, res) => {
     const info = await ytdl.getInfo(url);
     const isAudioOnly = audio === '1' || audio === 'true';
 
-    const progFormat = info.formats.find(f => f.hasVideo && f.hasAudio);
-    const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo);
+    let format;
+    if (itag) {
+      format = info.formats.find(f => f.itag === Number(itag));
+    }
 
-    const format = isAudioOnly ? audioFormat : (progFormat || info.formats.find(f => f.hasVideo));
+    if (!format) {
+      const progFormat = info.formats.find(f => f.hasVideo && f.hasAudio);
+      const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo);
+      format = isAudioOnly ? audioFormat : (progFormat || info.formats.find(f => f.hasVideo));
+    }
+
     if (!format) {
       return res.status(404).send('No compatible stream format found');
     }
 
     const title = (info.videoDetails?.title || 'youtube_media').replace(/[^\w\s-]/gi, '').slice(0, 50).trim();
-    const ext = isAudioOnly ? 'mp3' : 'mp4';
+    const ext = format.hasVideo ? 'mp4' : 'mp3';
     const fname = filename || `${title}.${ext}`;
 
-    res.setHeader('Content-Type', isAudioOnly ? 'audio/mp4' : 'video/mp4');
+    const mime = format.mimeType?.split(';')[0] || (format.hasVideo ? 'video/mp4' : 'audio/mp4');
+    res.setHeader('Content-Type', mime);
     if (download === '1') {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fname)}"`);
     }
