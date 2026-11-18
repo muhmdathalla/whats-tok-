@@ -1,71 +1,106 @@
 import spotty from 'spottydl';
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
 
 /**
- * Download Spotify Track / Music MP3 with metadata
+ * Download Spotify Track / Music MP3 with metadata and quality options
  * @param {string} url - Spotify Track URL
  */
 export async function downloadSpotify(url) {
-  // Method 1: SpottyDL (ekstrak metadata + audio)
+  // Method 1: SpottyDL (ekstrak metadata + cover)
   try {
     const trackInfo = await spotty.getTrack(url);
     if (trackInfo && trackInfo.title) {
-      const tempDir = path.resolve('./temp_audio');
-      fs.mkdirSync(tempDir, { recursive: true });
+      const title = trackInfo.title;
+      const artist = trackInfo.artist || 'Unknown Artist';
+      const album = trackInfo.album || 'Spotify Music';
+      const cover = trackInfo.albumCoverURL;
+      const query = encodeURIComponent(`${artist} - ${title}`);
 
-      const downloadResult = await spotty.downloadTrack(trackInfo, tempDir);
-      
-      // Cari file mp3 yang dihasilkan di tempDir
-      const files = fs.readdirSync(tempDir).filter(f => f.endsWith('.mp3'));
-      if (files.length > 0) {
-        const filePath = path.join(tempDir, files[0]);
-        const audioBuffer = fs.readFileSync(filePath);
-        
-        // Bersihkan temp
-        fs.unlinkSync(filePath);
+      const streamUrl = `/api/stream/spotify?q=${query}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
 
-        return {
-          title: trackInfo.title,
-          artist: trackInfo.artist || 'Unknown Artist',
-          album: trackInfo.album || 'Spotify Music',
-          year: trackInfo.year,
-          cover: trackInfo.albumCoverURL,
-          buffer: audioBuffer,
-          fileName: `${trackInfo.artist} - ${trackInfo.title}.mp3`
-        };
+      const formats = [
+        {
+          label: 'Studio Master Audio (320kbps MP3)',
+          quality: '320kbps',
+          type: 'audio',
+          ext: 'mp3',
+          url: `${streamUrl}&quality=320`
+        },
+        {
+          label: 'Standard Mobile Audio (128kbps MP3)',
+          quality: '128kbps',
+          type: 'audio',
+          ext: 'mp3',
+          url: `${streamUrl}&quality=128`
+        }
+      ];
+
+      if (cover) {
+        formats.push({
+          label: 'Original Album Cover Artwork (640x640)',
+          quality: 'HD',
+          type: 'image',
+          ext: 'jpg',
+          url: cover
+        });
       }
+
+      return {
+        type: 'audio',
+        title,
+        artist,
+        album,
+        year: trackInfo.year,
+        cover,
+        thumbnail: cover,
+        downloadUrl: streamUrl,
+        fileName: `${artist} - ${title}.mp3`,
+        formats
+      };
     }
   } catch (err) {
-    console.warn('[Spotify] spottydl gagal, mencoba fallback API:', err.message);
+    console.warn('[Spotify] spottydl getTrack gagal, mencoba fallback:', err.message);
   }
 
-  // Method 2: Public Spotify to MP3 API fallback
+  // Method 2: Spotify oEmbed metadata fallback
   try {
-    const res = await axios.get(`https://api.siputzx.my.id/api/d/spotify?url=${encodeURIComponent(url)}`, {
-      timeout: 25000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-      }
+    const res = await axios.get(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`, {
+      timeout: 5000
     });
+    if (res.data && res.data.title) {
+      const rawTitle = res.data.title;
+      const cover = res.data.thumbnail_url;
+      const query = encodeURIComponent(rawTitle);
+      const streamUrl = `/api/stream/spotify?q=${query}&title=${encodeURIComponent(rawTitle)}`;
 
-    if (res.data?.status && res.data?.data) {
-      const data = res.data.data;
-      const downloadUrl = data.download || data.url || data.audio;
-      if (downloadUrl) {
-        return {
-          title: data.name || data.title || 'Spotify Track',
-          artist: data.artist || 'Artist',
-          album: data.album || 'Spotify Music',
-          cover: data.image || data.cover,
-          downloadUrl,
-          fileName: `${data.artist || 'Artist'} - ${data.name || 'Song'}.mp3`
-        };
-      }
+      return {
+        type: 'audio',
+        title: rawTitle,
+        artist: 'Spotify Artist',
+        cover,
+        thumbnail: cover,
+        downloadUrl: streamUrl,
+        fileName: `${rawTitle}.mp3`,
+        formats: [
+          {
+            label: 'Audio Track (320kbps MP3)',
+            quality: '320kbps',
+            type: 'audio',
+            ext: 'mp3',
+            url: streamUrl
+          },
+          ...(cover ? [{
+            label: 'Album Cover (HD)',
+            quality: 'HD',
+            type: 'image',
+            ext: 'jpg',
+            url: cover
+          }] : [])
+        ]
+      };
     }
   } catch (err) {
-    console.warn('[Spotify] Siputzx fallback gagal:', err.message);
+    console.warn('[Spotify] oEmbed fallback gagal:', err.message);
   }
 
   throw new Error('Gagal mengunduh musik dari Spotify. Pastikan link lagu Spotify valid.');

@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import axios from 'axios';
 import { fileURLToPath } from 'url';
-import { Ytdl, Client } from '@distube/ytdl-core';
+import { Ytdl, Client, SearchType } from '@distube/ytdl-core';
 import { downloadMedia, detectPlatform } from './lib/downloader.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,6 +113,55 @@ app.get('/api/stream/youtube', async (req, res) => {
   } catch (err) {
     console.error('[YouTube Stream Route Error]:', err.message);
     if (!res.headersSent) res.status(500).send('Failed to stream: ' + err.message);
+  }
+});
+
+/**
+ * GET /api/stream/spotify
+ * Direct audio streaming for Spotify tracks via high-quality audio stream
+ */
+app.get('/api/stream/spotify', async (req, res) => {
+  const { q, title, artist, download } = req.query;
+  const searchQuery = q || `${artist || ''} ${title || ''}`.trim() || 'Rick Astley Never Gonna Give You Up';
+
+  try {
+    const ytdl = new Ytdl({ clients: [Client.WebEmbedded, Client.Tv] });
+    const results = await ytdl.search(searchQuery, { type: SearchType.Video });
+    if (!results || results.length === 0 || !results[0].url) {
+      return res.status(404).send('Spotify audio track match not found');
+    }
+
+    const matchedUrl = results[0].url;
+    const info = await ytdl.getInfo(matchedUrl);
+    const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo) || info.formats.find(f => f.hasAudio);
+
+    if (!audioFormat) {
+      return res.status(404).send('Audio stream not available');
+    }
+
+    const fname = `${artist ? artist + ' - ' : ''}${title || 'track'}.mp3`.replace(/[^\w\s-.]/gi, '');
+    res.setHeader('Content-Type', 'audio/mpeg');
+    if (download === '1') {
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fname)}"`);
+    }
+
+    const stream = ytdl.download(info, {
+      filter: f => f.itag === audioFormat.itag
+    });
+
+    stream.on('error', err => {
+      console.error('[Spotify Stream Error]:', err.message);
+      if (!res.headersSent) res.status(500).send('Streaming error: ' + err.message);
+    });
+
+    req.on('close', () => {
+      stream.destroy();
+    });
+
+    stream.pipe(res);
+  } catch (err) {
+    console.error('[Spotify Stream Route Error]:', err.message);
+    if (!res.headersSent) res.status(500).send('Failed to stream audio: ' + err.message);
   }
 });
 
