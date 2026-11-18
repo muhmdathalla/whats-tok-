@@ -173,10 +173,10 @@ app.get('/api/proxy', async (req, res) => {
   const { url, filename } = req.query;
   if (!url) return res.status(400).send('Missing url parameter');
 
-  // Handle internal stream routes
-  if (url.startsWith('/api/stream/youtube')) {
+  // Handle internal stream routes (YouTube, Spotify, etc.)
+  if (url.startsWith('/api/stream/')) {
     const sep = url.includes('?') ? '&' : '?';
-    return res.redirect(`${url}${sep}download=1&filename=${encodeURIComponent(filename || 'youtube_video.mp4')}`);
+    return res.redirect(`${url}${sep}download=1&filename=${encodeURIComponent(filename || 'downloaded_media')}`);
   }
 
   try {
