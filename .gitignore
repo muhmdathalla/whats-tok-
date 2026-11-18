@@ -3,3 +3,4 @@ session/
 .env
 .DS_Store
 *.log
+*-player-script.js

@@ -407,6 +407,27 @@ async function handleInstagram(sock, targetJid, url) {
 }
 
 /**
+ * Helper to convert readable stream to Buffer with size guard (e.g. max 70MB for WhatsApp)
+ */
+async function streamToBuffer(stream, maxBytes = 70 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    stream.on('data', chunk => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        stream.destroy();
+        reject(new Error('Ukuran video melebihi batas WhatsApp (70MB). Gunakan Web untuk mengunduh video panjang: https://whats-tok.vercel.app'));
+      } else {
+        chunks.push(chunk);
+      }
+    });
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+}
+
+/**
  * Handler YouTube
  */
 async function handleYouTube(sock, targetJid, url, isAudioOnly = false) {
@@ -414,25 +435,39 @@ async function handleYouTube(sock, targetJid, url, isAudioOnly = false) {
   try {
     const data = await downloadYouTube(url);
 
-    if (!data.videoUrl) {
-      throw new Error('Link download video YouTube tidak ditemukan.');
-    }
-
     // Jika minta audio saja
     if (isAudioOnly) {
-      await sock.sendMessage(targetJid, {
-        audio: { url: data.videoUrl },
-        mimetype: 'audio/mp4',
-        fileName: `${data.title}.mp3`
-      });
+      if (data.getAudioStream) {
+        const audioBuf = await streamToBuffer(data.getAudioStream());
+        await sock.sendMessage(targetJid, {
+          audio: audioBuf,
+          mimetype: 'audio/mp4',
+          fileName: `${data.title}.mp3`
+        });
+      } else if (data.videoUrl) {
+        await sock.sendMessage(targetJid, {
+          audio: { url: data.videoUrl },
+          mimetype: 'audio/mp4',
+          fileName: `${data.title}.mp3`
+        });
+      }
       console.log('[YouTube] Sukses mengirim audio YouTube');
       return;
     }
 
-    await sock.sendMessage(targetJid, {
-      video: { url: data.videoUrl },
-      caption: `▶️ *YouTube Video*\n📌 *Judul:* ${data.title}\n⏱️ *Durasi:* ${data.duration || '-'}\n👤 *Channel:* ${data.author || '-'}`
-    });
+    // Video stream buffer
+    if (data.getStream) {
+      const videoBuf = await streamToBuffer(data.getStream());
+      await sock.sendMessage(targetJid, {
+        video: videoBuf,
+        caption: `▶️ *YouTube Video*\n📌 *Judul:* ${data.title}\n⏱️ *Durasi:* ${data.duration || '-'}\n👤 *Channel:* ${data.author || '-'}`
+      });
+    } else if (data.videoUrl) {
+      await sock.sendMessage(targetJid, {
+        video: { url: data.videoUrl },
+        caption: `▶️ *YouTube Video*\n📌 *Judul:* ${data.title}\n⏱️ *Durasi:* ${data.duration || '-'}\n👤 *Channel:* ${data.author || '-'}`
+      });
+    }
 
     console.log('[YouTube] Sukses mengirim video');
   } catch (err) {

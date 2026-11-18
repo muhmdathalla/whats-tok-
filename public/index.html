@@ -399,16 +399,24 @@
           </video>
         `;
 
+        const videoDownloadHref = data.videoUrl.startsWith('/api/')
+          ? `${data.videoUrl}${data.videoUrl.includes('?') ? '&' : '?'}download=1&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}`
+          : `/api/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}`;
+
         actionButtons.innerHTML += `
-          <a href="/api/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=${encodeURIComponent((data.title || 'video').slice(0, 30) + '.mp4')}" class="flex-1 py-3 px-4 bg-white hover:bg-zinc-200 text-black font-semibold rounded-lg text-xs font-mono text-center flex items-center justify-center gap-2 transition-colors">
+          <a href="${videoDownloadHref}" class="flex-1 py-3 px-4 bg-white hover:bg-zinc-200 text-black font-semibold rounded-lg text-xs font-mono text-center flex items-center justify-center gap-2 transition-colors">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Download Video (Original MP4)</span>
           </a>
         `;
 
         if (data.musicUrl) {
+          const musicDownloadHref = data.musicUrl.startsWith('/api/')
+            ? `${data.musicUrl}${data.musicUrl.includes('?') ? '&' : '?'}download=1&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}`
+            : `/api/proxy?url=${encodeURIComponent(data.musicUrl)}&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}`;
+
           actionButtons.innerHTML += `
-            <a href="/api/proxy?url=${encodeURIComponent(data.musicUrl)}&filename=${encodeURIComponent('audio_' + (data.title || 'sound').slice(0, 20) + '.mp3')}" class="py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-mono flex items-center justify-center gap-2 transition-colors">
+            <a href="${musicDownloadHref}" class="py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-mono flex items-center justify-center gap-2 transition-colors">
               <i data-lucide="music" class="w-3.5 h-3.5"></i>
               <span>Audio Only</span>
             </a>

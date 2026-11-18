@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import axios from 'axios';
 import { fileURLToPath } from 'url';
+import { Ytdl, Client } from '@distube/ytdl-core';
 import { downloadMedia, detectPlatform } from './lib/downloader.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -58,12 +59,68 @@ app.post('/api/download', async (req, res) => {
 });
 
 /**
+ * GET /api/stream/youtube
+ * Direct media streaming for YouTube videos and audio tracks
+ */
+app.get('/api/stream/youtube', async (req, res) => {
+  const { url, audio, download, filename } = req.query;
+  if (!url) return res.status(400).send('Missing url parameter');
+
+  try {
+    const ytdl = new Ytdl({ clients: [Client.WebEmbedded, Client.Tv] });
+    const info = await ytdl.getInfo(url);
+    const isAudioOnly = audio === '1' || audio === 'true';
+
+    const progFormat = info.formats.find(f => f.hasVideo && f.hasAudio);
+    const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo);
+
+    const format = isAudioOnly ? audioFormat : (progFormat || info.formats.find(f => f.hasVideo));
+    if (!format) {
+      return res.status(404).send('No compatible stream format found');
+    }
+
+    const title = (info.videoDetails?.title || 'youtube_media').replace(/[^\w\s-]/gi, '').slice(0, 50).trim();
+    const ext = isAudioOnly ? 'mp3' : 'mp4';
+    const fname = filename || `${title}.${ext}`;
+
+    res.setHeader('Content-Type', isAudioOnly ? 'audio/mp4' : 'video/mp4');
+    if (download === '1') {
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fname)}"`);
+    }
+
+    const stream = ytdl.download(info, {
+      filter: f => f.itag === format.itag
+    });
+
+    stream.on('error', (err) => {
+      console.error('[YouTube Stream Error]:', err.message);
+      if (!res.headersSent) res.status(500).send('Streaming error: ' + err.message);
+    });
+
+    req.on('close', () => {
+      stream.destroy();
+    });
+
+    stream.pipe(res);
+  } catch (err) {
+    console.error('[YouTube Stream Route Error]:', err.message);
+    if (!res.headersSent) res.status(500).send('Failed to stream: ' + err.message);
+  }
+});
+
+/**
  * GET /api/proxy
  * Safe download proxy to force download / bypass CORS on client side
  */
 app.get('/api/proxy', async (req, res) => {
   const { url, filename } = req.query;
   if (!url) return res.status(400).send('Missing url parameter');
+
+  // Handle internal stream routes
+  if (url.startsWith('/api/stream/youtube')) {
+    const sep = url.includes('?') ? '&' : '?';
+    return res.redirect(`${url}${sep}download=1&filename=${encodeURIComponent(filename || 'youtube_video.mp4')}`);
+  }
 
   try {
     const response = await axios({
