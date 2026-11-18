@@ -3,6 +3,7 @@ import * as btch from 'btch-downloader';
 
 /**
  * Download Instagram Media (Single Photo, Carousel Multi-photo, Reels/Video)
+ * with individual resolution and format selection
  */
 export async function downloadInstagram(rawUrl) {
   // Bersihkan query string parameter (misal: ?igsh=... atau ?mdxt=...)
@@ -53,10 +54,38 @@ export async function downloadInstagram(rawUrl) {
         else if (hasVideo) overallType = 'video';
         else overallType = 'images';
 
+        const formats = [];
+        items.forEach((item, idx) => {
+          if (item.type === 'video') {
+            formats.push({
+              label: items.length > 1 ? `Reels Video #${idx + 1} (Original MP4)` : 'High-Quality Video (Original MP4)',
+              quality: 'HD Original',
+              type: 'video',
+              ext: 'mp4',
+              url: item.url
+            });
+          } else {
+            formats.push({
+              label: items.length > 1 ? `Carousel Photo #${idx + 1} (Original)` : 'High-Resolution Photo',
+              quality: 'Original HD',
+              type: 'image',
+              ext: 'jpg',
+              url: item.url
+            });
+          }
+        });
+
+        const firstVideo = items.find(i => i.type === 'video');
+        const firstImage = items.find(i => i.type === 'image');
+
         return {
           type: overallType,
           caption: 'Instagram Media',
-          items: items.slice(0, 20)
+          items: items.slice(0, 20),
+          videoUrl: firstVideo?.url,
+          imageUrl: firstImage?.url,
+          images: items.filter(i => i.type === 'image').map(i => i.url),
+          formats
         };
       }
     }
@@ -94,10 +123,25 @@ export async function downloadInstagram(rawUrl) {
         else if (hasVideo) overallType = 'video';
         else overallType = 'images';
 
+        const formats = finalItems.map((item, idx) => ({
+          label: item.type === 'video' ? `Instagram Video #${idx + 1}` : `Instagram Photo #${idx + 1}`,
+          quality: 'Original',
+          type: item.type,
+          ext: item.type === 'video' ? 'mp4' : 'jpg',
+          url: item.url
+        }));
+
+        const firstVideo = finalItems.find(i => i.type === 'video');
+        const firstImage = finalItems.find(i => i.type === 'image');
+
         return {
           type: overallType,
           caption: rawData?.caption || rawData?.title || 'Instagram Media',
-          items: finalItems
+          items: finalItems,
+          videoUrl: firstVideo?.url,
+          imageUrl: firstImage?.url,
+          images: finalItems.filter(i => i.type === 'image').map(i => i.url),
+          formats
         };
       }
     }
