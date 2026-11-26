@@ -5,8 +5,9 @@ import axios from 'axios';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import ffmpegStatic from 'ffmpeg-static';
-import { Ytdl, Client, SearchType } from '@distube/ytdl-core';
+import { SearchType } from '@distube/ytdl-core';
 import { downloadMedia, detectPlatform } from './lib/downloader.js';
+import { getYtdlInstance } from './lib/youtube.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,7 +70,7 @@ app.get('/api/stream/youtube', async (req, res) => {
   if (!url) return res.status(400).send('Missing url parameter');
 
   try {
-    const ytdl = new Ytdl({ clients: [Client.VisionOS] });
+    const ytdl = getYtdlInstance();
     const info = await ytdl.getInfo(url);
     const isAudioOnly = audio === '1' || audio === 'true';
 
@@ -114,7 +115,14 @@ app.get('/api/stream/youtube', async (req, res) => {
     stream.pipe(res);
   } catch (err) {
     console.error('[YouTube Stream Route Error]:', err.message);
-    if (!res.headersSent) res.status(500).send('Failed to stream: ' + err.message);
+    if (!res.headersSent) {
+      if (err.message && (err.message.includes('not a bot') || err.message.includes('BOT_CHECK'))) {
+        return res.status(403).send(
+          'YouTube Bot Check: IP datacenter Vercel terblokir oleh YouTube. Tambahkan variabel YOUTUBE_COOKIE di Vercel Environment Variables, atau jalankan aplikasi di lokal / VPS (PM2).'
+        );
+      }
+      res.status(500).send('Failed to stream: ' + err.message);
+    }
   }
 });
 
@@ -128,7 +136,7 @@ app.get(['/api/stream/music', '/api/stream/spotify'], async (req, res) => {
   const targetFormat = (format || 'mp3').toLowerCase();
 
   try {
-    const ytdl = new Ytdl({ clients: [Client.VisionOS] });
+    const ytdl = getYtdlInstance();
 
     let targetVideoUrl = url;
     if (!targetVideoUrl && q) {
@@ -225,7 +233,14 @@ app.get(['/api/stream/music', '/api/stream/spotify'], async (req, res) => {
     }
   } catch (err) {
     console.error('[Music Stream Route Error]:', err.message);
-    if (!res.headersSent) res.status(500).send('Failed to stream audio: ' + err.message);
+    if (!res.headersSent) {
+      if (err.message && (err.message.includes('not a bot') || err.message.includes('BOT_CHECK'))) {
+        return res.status(403).send(
+          'YouTube Bot Check: IP datacenter Vercel terblokir oleh YouTube. Tambahkan variabel YOUTUBE_COOKIE di Vercel Environment Variables, atau jalankan aplikasi di lokal / VPS (PM2).'
+        );
+      }
+      res.status(500).send('Failed to stream audio: ' + err.message);
+    }
   }
 });
 

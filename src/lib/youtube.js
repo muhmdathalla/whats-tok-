@@ -38,6 +38,18 @@ async function fetchOEmbedInfo(url) {
 }
 
 /**
+ * Helper to get configured Ytdl client instance
+ * Supports YOUTUBE_COOKIE environment variable to bypass datacenter/Vercel bot check
+ */
+export function getYtdlInstance() {
+  const cookie = process.env.YOUTUBE_COOKIE || undefined;
+  return new Ytdl({
+    clients: [Client.VisionOS],
+    ...(cookie ? { cookie } : {})
+  });
+}
+
+/**
  * Download YouTube / YouTube Music video & audio formats and streams
  * @param {string} url - YouTube URL
  */
@@ -46,11 +58,9 @@ export async function downloadYouTube(url) {
   const normalizedUrl = cleanId ? `https://www.youtube.com/watch?v=${cleanId}` : url;
   const isYouTubeMusic = url.includes('music.youtube.com');
 
-  // Primary: @distube/ytdl-core with VisionOS first (needs no player cipher)
+  // Primary: @distube/ytdl-core with VisionOS (needs no player cipher)
   try {
-    const ytdl = new Ytdl({
-      clients: [Client.VisionOS, Client.WebEmbedded, Client.Tv]
-    });
+    const ytdl = getYtdlInstance();
 
     const info = await ytdl.getInfo(normalizedUrl);
     const details = info.videoDetails || {};
