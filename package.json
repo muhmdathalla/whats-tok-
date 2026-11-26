@@ -8,10 +8,10 @@
     "start": "node src/index.js",
     "build": "echo 'Ready for Vercel'",
     "web": "node src/server.js",
-    "pm2:start": "pm2 start src/index.js --name whats-tok",
-    "pm2:stop": "pm2 stop whats-tok",
-    "pm2:logs": "pm2 logs whats-tok",
-    "pm2:restart": "pm2 restart whats-tok"
+    "pm2:start": "npx pm2 start src/index.js --name whats-tok",
+    "pm2:stop": "npx pm2 stop whats-tok",
+    "pm2:logs": "npx pm2 logs whats-tok",
+    "pm2:restart": "npx pm2 restart whats-tok"
   },
   "keywords": [
     "whatsapp-bot",
