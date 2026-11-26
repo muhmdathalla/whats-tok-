@@ -2,7 +2,7 @@ import spotty from 'spottydl';
 import axios from 'axios';
 
 /**
- * Download Spotify Track / Music MP3 with metadata and quality options
+ * Download Spotify Track / Music MP3 with metadata and multi-format quality options
  * @param {string} url - Spotify Track URL
  */
 export async function downloadSpotify(url) {
@@ -16,7 +16,7 @@ export async function downloadSpotify(url) {
       const cover = trackInfo.albumCoverURL;
       const query = encodeURIComponent(`${artist} - ${title}`);
 
-      const streamUrl = `/api/stream/spotify?q=${query}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
+      const baseStreamUrl = `/api/stream/music?q=${query}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
 
       const formats = [
         {
@@ -24,14 +24,35 @@ export async function downloadSpotify(url) {
           quality: '320kbps',
           type: 'audio',
           ext: 'mp3',
-          url: `${streamUrl}&quality=320`
+          url: `${baseStreamUrl}&format=mp3&bitrate=320k`
         },
         {
-          label: 'Standard Mobile Audio (128kbps MP3)',
+          label: 'Standard Quality Audio (128kbps MP3)',
           quality: '128kbps',
           type: 'audio',
           ext: 'mp3',
-          url: `${streamUrl}&quality=128`
+          url: `${baseStreamUrl}&format=mp3&bitrate=128k`
+        },
+        {
+          label: 'Lossless Audio (WAV 16-bit Uncompressed)',
+          quality: 'WAV Lossless',
+          type: 'audio',
+          ext: 'wav',
+          url: `${baseStreamUrl}&format=wav`
+        },
+        {
+          label: 'Hi-Res Lossless Audio (FLAC 24-bit)',
+          quality: 'FLAC Hi-Res',
+          type: 'audio',
+          ext: 'flac',
+          url: `${baseStreamUrl}&format=flac`
+        },
+        {
+          label: 'Native AAC Stream (256kbps M4A)',
+          quality: 'AAC 256k',
+          type: 'audio',
+          ext: 'm4a',
+          url: `${baseStreamUrl}&format=m4a`
         }
       ];
 
@@ -53,7 +74,7 @@ export async function downloadSpotify(url) {
         year: trackInfo.year,
         cover,
         thumbnail: cover,
-        downloadUrl: streamUrl,
+        downloadUrl: `${baseStreamUrl}&format=mp3&bitrate=320k`,
         fileName: `${artist} - ${title}.mp3`,
         formats
       };
@@ -71,7 +92,7 @@ export async function downloadSpotify(url) {
       const rawTitle = res.data.title;
       const cover = res.data.thumbnail_url;
       const query = encodeURIComponent(rawTitle);
-      const streamUrl = `/api/stream/spotify?q=${query}&title=${encodeURIComponent(rawTitle)}`;
+      const baseStreamUrl = `/api/stream/music?q=${query}&title=${encodeURIComponent(rawTitle)}`;
 
       return {
         type: 'audio',
@@ -79,15 +100,36 @@ export async function downloadSpotify(url) {
         artist: 'Spotify Artist',
         cover,
         thumbnail: cover,
-        downloadUrl: streamUrl,
+        downloadUrl: `${baseStreamUrl}&format=mp3&bitrate=320k`,
         fileName: `${rawTitle}.mp3`,
         formats: [
           {
-            label: 'Audio Track (320kbps MP3)',
+            label: 'Studio Master Audio (320kbps MP3)',
             quality: '320kbps',
             type: 'audio',
             ext: 'mp3',
-            url: streamUrl
+            url: `${baseStreamUrl}&format=mp3&bitrate=320k`
+          },
+          {
+            label: 'Standard Audio (128kbps MP3)',
+            quality: '128kbps',
+            type: 'audio',
+            ext: 'mp3',
+            url: `${baseStreamUrl}&format=mp3&bitrate=128k`
+          },
+          {
+            label: 'Lossless Audio (WAV)',
+            quality: 'WAV',
+            type: 'audio',
+            ext: 'wav',
+            url: `${baseStreamUrl}&format=wav`
+          },
+          {
+            label: 'Hi-Res Lossless (FLAC)',
+            quality: 'FLAC',
+            type: 'audio',
+            ext: 'flac',
+            url: `${baseStreamUrl}&format=flac`
           },
           ...(cover ? [{
             label: 'Album Cover (HD)',
