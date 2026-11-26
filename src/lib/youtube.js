@@ -15,11 +15,11 @@ function formatDuration(sec) {
 }
 
 /**
- * Extract YouTube video ID
+ * Extract YouTube / YouTube Music video ID
  */
 export function extractYouTubeId(url) {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
+  const match = url.match(/(?:youtu\.be\/|(?:www\.|m\.|music\.)?youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
   return match ? match[1] : null;
 }
 
@@ -38,24 +38,25 @@ async function fetchOEmbedInfo(url) {
 }
 
 /**
- * Download YouTube video / shorts info, formats, and streams
+ * Download YouTube / YouTube Music video & audio formats and streams
  * @param {string} url - YouTube URL
  */
 export async function downloadYouTube(url) {
   const cleanId = extractYouTubeId(url);
   const normalizedUrl = cleanId ? `https://www.youtube.com/watch?v=${cleanId}` : url;
+  const isYouTubeMusic = url.includes('music.youtube.com');
 
-  // Primary: @distube/ytdl-core with WebEmbedded & Tv clients
+  // Primary: @distube/ytdl-core with VisionOS first (needs no player cipher)
   try {
     const ytdl = new Ytdl({
-      clients: [Client.WebEmbedded, Client.Tv]
+      clients: [Client.VisionOS, Client.WebEmbedded, Client.Tv]
     });
 
     const info = await ytdl.getInfo(normalizedUrl);
     const details = info.videoDetails || {};
 
-    const title = details.title || 'YouTube Video';
-    const author = details.author?.name || details.ownerChannelName || 'YouTube Channel';
+    const title = details.title || 'YouTube Audio / Video';
+    const author = details.author?.name || details.ownerChannelName || 'YouTube Artist';
     const duration = formatDuration(Number(details.lengthSeconds));
     const thumbnail = details.thumbnails?.slice(-1)[0]?.url || `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`;
 
@@ -64,12 +65,55 @@ export async function downloadYouTube(url) {
     // Audio-only format
     const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo);
 
+    const baseMusicUrl = `/api/stream/music?url=${encodeURIComponent(normalizedUrl)}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(author)}`;
+
     // Build comprehensive format & resolution list for Web UI
     const formats = [];
     const seenQualities = new Set();
 
-    // 1. Progressive format (Combined Audio + Video)
-    if (progFormat) {
+    // 1. Audio Formats (MP3 320k, 128k, WAV Lossless, FLAC Hi-Res, M4A)
+    formats.push({
+      label: 'Studio Master Audio (320kbps MP3)',
+      quality: '320kbps',
+      type: 'audio',
+      ext: 'mp3',
+      url: `${baseMusicUrl}&format=mp3&bitrate=320k`
+    });
+
+    formats.push({
+      label: 'Standard Quality Audio (128kbps MP3)',
+      quality: '128kbps',
+      type: 'audio',
+      ext: 'mp3',
+      url: `${baseMusicUrl}&format=mp3&bitrate=128k`
+    });
+
+    formats.push({
+      label: 'Lossless Audio (WAV 16-bit Uncompressed)',
+      quality: 'WAV Lossless',
+      type: 'audio',
+      ext: 'wav',
+      url: `${baseMusicUrl}&format=wav`
+    });
+
+    formats.push({
+      label: 'Hi-Res Lossless Audio (FLAC 24-bit)',
+      quality: 'FLAC Hi-Res',
+      type: 'audio',
+      ext: 'flac',
+      url: `${baseMusicUrl}&format=flac`
+    });
+
+    formats.push({
+      label: 'Native AAC Audio (M4A)',
+      quality: 'M4A',
+      type: 'audio',
+      ext: 'm4a',
+      url: `${baseMusicUrl}&format=m4a`
+    });
+
+    // 2. Progressive format (Combined Audio + Video) if video
+    if (progFormat && !isYouTubeMusic) {
       seenQualities.add(progFormat.qualityLabel || '360p');
       formats.push({
         label: `${progFormat.qualityLabel || '360p'} Standard (Video + Audio)`,
@@ -81,69 +125,47 @@ export async function downloadYouTube(url) {
       });
     }
 
-    // 2. High Resolution Video Formats (1080p, 720p, 480p, etc.)
-    const videoFormats = info.formats.filter(f => f.hasVideo && f.container === 'mp4');
-    for (const f of videoFormats) {
-      if (f.qualityLabel && !seenQualities.has(f.qualityLabel)) {
-        seenQualities.add(f.qualityLabel);
-        formats.push({
-          label: `${f.qualityLabel} HD Stream`,
-          quality: f.qualityLabel,
-          type: 'video',
-          ext: 'mp4',
-          itag: f.itag,
-          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${f.itag}`
-        });
-      }
-    }
-
-    // 3. Audio Tracks & Bitrates (128kbps, 160kbps, etc.)
-    const audioFormats = info.formats.filter(f => f.hasAudio && !f.hasVideo);
-    const seenBitrates = new Set();
-    for (const f of audioFormats) {
-      const br = f.audioBitrate ? `${f.audioBitrate}kbps` : 'High';
-      if (!seenBitrates.has(br)) {
-        seenBitrates.add(br);
-        formats.push({
-          label: `Audio MP3 / M4A (${br})`,
-          quality: br,
-          type: 'audio',
-          ext: 'mp3',
-          itag: f.itag,
-          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${f.itag}&audio=1`
-        });
+    // 3. High Resolution Video Formats (1080p, 720p, 480p, etc.) if video
+    if (!isYouTubeMusic) {
+      const videoFormats = info.formats.filter(f => f.hasVideo && f.container === 'mp4');
+      for (const f of videoFormats) {
+        if (f.qualityLabel && !seenQualities.has(f.qualityLabel)) {
+          seenQualities.add(f.qualityLabel);
+          formats.push({
+            label: `${f.qualityLabel} Video Stream`,
+            quality: f.qualityLabel,
+            type: 'video',
+            ext: 'mp4',
+            itag: f.itag,
+            url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&itag=${f.itag}`
+          });
+        }
       }
     }
 
     // 4. High-Res Thumbnail Artworks
     if (cleanId) {
       formats.push({
-        label: 'Cover Thumbnail (MaxRes HD)',
+        label: 'Cover Artwork (MaxRes HD)',
         quality: '1080p',
         type: 'image',
         ext: 'jpg',
         url: `https://i.ytimg.com/vi/${cleanId}/maxresdefault.jpg`
       });
-      formats.push({
-        label: 'Cover Thumbnail (High Quality)',
-        quality: '720p',
-        type: 'image',
-        ext: 'jpg',
-        url: `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`
-      });
     }
 
     return {
-      type: 'video',
+      type: isYouTubeMusic ? 'audio' : 'video',
       title,
       author,
       duration,
       thumbnail,
+      cover: thumbnail,
+      downloadUrl: `${baseMusicUrl}&format=mp3&bitrate=320k`,
       videoUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`,
-      musicUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`,
+      musicUrl: `${baseMusicUrl}&format=mp3&bitrate=320k`,
       directUrl: progFormat?.url,
       formats,
-      // Helper functions for native server / bot streaming
       getStream: () => ytdl.download(info, {
         filter: f => (progFormat ? f.itag === progFormat.itag : (f.hasVideo && f.hasAudio))
       }),
@@ -158,30 +180,47 @@ export async function downloadYouTube(url) {
   // Fallback: oEmbed metadata if ytdl is temporarily blocked
   const oembed = await fetchOEmbedInfo(normalizedUrl);
   if (oembed && cleanId) {
+    const baseMusicUrl = `/api/stream/music?url=${encodeURIComponent(normalizedUrl)}&title=${encodeURIComponent(oembed.title || 'audio')}`;
     return {
-      type: 'video',
-      title: oembed.title || 'YouTube Video',
-      author: oembed.author_name || 'YouTube Channel',
+      type: isYouTubeMusic ? 'audio' : 'video',
+      title: oembed.title || 'YouTube Media',
+      author: oembed.author_name || 'YouTube Artist',
       thumbnail: oembed.thumbnail_url || `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`,
+      cover: oembed.thumbnail_url || `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`,
       videoUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`,
-      musicUrl: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`,
+      musicUrl: `${baseMusicUrl}&format=mp3&bitrate=320k`,
+      downloadUrl: `${baseMusicUrl}&format=mp3&bitrate=320k`,
       formats: [
         {
-          label: 'Default MP4 Video Stream',
-          quality: '360p',
-          type: 'video',
-          ext: 'mp4',
-          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}`
+          label: 'Studio Master Audio (320kbps MP3)',
+          quality: '320kbps',
+          type: 'audio',
+          ext: 'mp3',
+          url: `${baseMusicUrl}&format=mp3&bitrate=320k`
         },
         {
-          label: 'Audio Track',
+          label: 'Standard Audio (128kbps MP3)',
           quality: '128kbps',
           type: 'audio',
           ext: 'mp3',
-          url: `/api/stream/youtube?url=${encodeURIComponent(normalizedUrl)}&audio=1`
+          url: `${baseMusicUrl}&format=mp3&bitrate=128k`
         },
         {
-          label: 'HQ Thumbnail',
+          label: 'Lossless Audio (WAV)',
+          quality: 'WAV',
+          type: 'audio',
+          ext: 'wav',
+          url: `${baseMusicUrl}&format=wav`
+        },
+        {
+          label: 'Hi-Res Lossless (FLAC)',
+          quality: 'FLAC',
+          type: 'audio',
+          ext: 'flac',
+          url: `${baseMusicUrl}&format=flac`
+        },
+        {
+          label: 'HQ Cover Artwork',
           quality: 'HQ',
           type: 'image',
           ext: 'jpg',
@@ -191,5 +230,5 @@ export async function downloadYouTube(url) {
     };
   }
 
-  throw new Error('Gagal mengekstrak video dari YouTube. Pastikan link video valid dan publik.');
+  throw new Error('Gagal mengekstrak media dari YouTube. Pastikan link video valid dan publik.');
 }
