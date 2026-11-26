@@ -3,6 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import axios from 'axios';
 import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import ffmpegStatic from 'ffmpeg-static';
 import { Ytdl, Client, SearchType } from '@distube/ytdl-core';
 import { downloadMedia, detectPlatform } from './lib/downloader.js';
 
@@ -25,8 +27,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.get('/api/info', (req, res) => {
   res.json({
     name: 'Whats-Tok Universal Downloader',
-    version: '2.0.0',
-    platforms: ['tiktok', 'instagram', 'youtube', 'spotify', 'twitter', 'pinterest', 'facebook']
+    version: '2.1.0',
+    platforms: ['tiktok', 'instagram', 'youtube', 'spotify', 'applemusic', 'twitter', 'pinterest', 'facebook']
   });
 });
 
@@ -67,7 +69,7 @@ app.get('/api/stream/youtube', async (req, res) => {
   if (!url) return res.status(400).send('Missing url parameter');
 
   try {
-    const ytdl = new Ytdl({ clients: [Client.WebEmbedded, Client.Tv] });
+    const ytdl = new Ytdl({ clients: [Client.VisionOS] });
     const info = await ytdl.getInfo(url);
     const isAudioOnly = audio === '1' || audio === 'true';
 
@@ -117,50 +119,112 @@ app.get('/api/stream/youtube', async (req, res) => {
 });
 
 /**
- * GET /api/stream/spotify
- * Direct audio streaming for Spotify tracks via high-quality audio stream
+ * GET /api/stream/music & /api/stream/spotify
+ * Unified audio transcode and streaming engine (MP3 320k/128k, WAV, FLAC, M4A)
+ * Supports YouTube Music, Spotify, Apple Music, and YouTube Audio
  */
-app.get('/api/stream/spotify', async (req, res) => {
-  const { q, title, artist, download } = req.query;
-  const searchQuery = q || `${artist || ''} ${title || ''}`.trim() || 'Rick Astley Never Gonna Give You Up';
+app.get(['/api/stream/music', '/api/stream/spotify'], async (req, res) => {
+  const { url, q, title, artist, format = 'mp3', bitrate = '320k', download } = req.query;
+  const targetFormat = (format || 'mp3').toLowerCase();
 
   try {
-    const ytdl = new Ytdl({ clients: [Client.WebEmbedded, Client.Tv] });
-    const results = await ytdl.search(searchQuery, { type: SearchType.Video });
-    if (!results || results.length === 0 || !results[0].url) {
-      return res.status(404).send('Spotify audio track match not found');
+    const ytdl = new Ytdl({ clients: [Client.VisionOS] });
+
+    let targetVideoUrl = url;
+    if (!targetVideoUrl && q) {
+      const results = await ytdl.search(q, { type: SearchType.Video });
+      if (!results || results.length === 0 || !results[0].url) {
+        return res.status(404).send('Audio match not found for search query.');
+      }
+      targetVideoUrl = results[0].url;
     }
 
-    const matchedUrl = results[0].url;
-    const info = await ytdl.getInfo(matchedUrl);
+    if (!targetVideoUrl) {
+      return res.status(400).send('Missing url or query parameter.');
+    }
+
+    const info = await ytdl.getInfo(targetVideoUrl);
     const audioFormat = info.formats.find(f => f.hasAudio && !f.hasVideo) || info.formats.find(f => f.hasAudio);
 
     if (!audioFormat) {
-      return res.status(404).send('Audio stream not available');
+      return res.status(404).send('Audio stream not available for this media.');
     }
 
-    const fname = `${artist ? artist + ' - ' : ''}${title || 'track'}.mp3`.replace(/[^\w\s-.]/gi, '');
-    res.setHeader('Content-Type', 'audio/mpeg');
+    const rawTitle = title || info.videoDetails?.title || 'audio_track';
+    const cleanTitle = (artist ? `${artist} - ${rawTitle}` : rawTitle).replace(/[^\w\s-.]/gi, '').slice(0, 50).trim();
+    const filename = `${cleanTitle}.${targetFormat}`;
+
+    // Set MIME Types & Download Disposition
+    const mimeMap = {
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      flac: 'audio/flac',
+      m4a: 'audio/mp4',
+      aac: 'audio/aac'
+    };
+    res.setHeader('Content-Type', mimeMap[targetFormat] || 'audio/mpeg');
     if (download === '1') {
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fname)}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     }
 
-    const stream = ytdl.download(info, {
+    const rawStream = ytdl.download(info, {
       filter: f => f.itag === audioFormat.itag
     });
 
-    stream.on('error', err => {
-      console.error('[Spotify Stream Error]:', err.message);
-      if (!res.headersSent) res.status(500).send('Streaming error: ' + err.message);
-    });
+    // Check if transcoding is requested (MP3 custom bitrate, WAV, FLAC)
+    if (ffmpegStatic && (targetFormat === 'mp3' || targetFormat === 'wav' || targetFormat === 'flac')) {
+      const ffmpegArgs = ['-i', 'pipe:0'];
 
-    req.on('close', () => {
-      stream.destroy();
-    });
+      if (targetFormat === 'mp3') {
+        const br = bitrate === '128k' ? '128k' : '320k';
+        ffmpegArgs.push('-b:a', br, '-f', 'mp3');
+      } else if (targetFormat === 'wav') {
+        ffmpegArgs.push('-f', 'wav');
+      } else if (targetFormat === 'flac') {
+        ffmpegArgs.push('-f', 'flac');
+      }
 
-    stream.pipe(res);
+      ffmpegArgs.push('pipe:1');
+
+      const ff = spawn(ffmpegStatic, ffmpegArgs);
+
+      rawStream.on('error', (err) => {
+        console.error('[Music Stream Raw Error]:', err.message);
+        ff.kill();
+      });
+
+      ff.stdin.on('error', () => {});
+      ff.stderr.on('data', () => {});
+
+      ff.on('error', (err) => {
+        console.error('[FFmpeg Process Error]:', err.message);
+        if (!res.headersSent) {
+          rawStream.pipe(res);
+        }
+      });
+
+      req.on('close', () => {
+        rawStream.destroy();
+        ff.kill();
+      });
+
+      rawStream.pipe(ff.stdin);
+      ff.stdout.pipe(res);
+    } else {
+      // Direct native audio stream
+      rawStream.on('error', (err) => {
+        console.error('[Audio Stream Error]:', err.message);
+        if (!res.headersSent) res.status(500).send('Streaming error: ' + err.message);
+      });
+
+      req.on('close', () => {
+        rawStream.destroy();
+      });
+
+      rawStream.pipe(res);
+    }
   } catch (err) {
-    console.error('[Spotify Stream Route Error]:', err.message);
+    console.error('[Music Stream Route Error]:', err.message);
     if (!res.headersSent) res.status(500).send('Failed to stream audio: ' + err.message);
   }
 });
