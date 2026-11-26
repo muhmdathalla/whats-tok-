@@ -133,9 +133,11 @@
 
       <!-- Platform Matrix Tags -->
       <div class="flex flex-wrap items-center gap-1.5 pt-2 font-mono text-[11px] text-zinc-400">
+        <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">Spotify</span>
+        <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">Apple Music</span>
+        <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">YouTube Music</span>
         <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">TikTok</span>
         <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">Instagram</span>
-        <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">Spotify</span>
         <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">YouTube</span>
         <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">X / Twitter</span>
         <span class="px-2 py-0.5 rounded bg-zinc-900 border border-subtle">Pinterest</span>
@@ -458,25 +460,29 @@
       mediaPreview.innerHTML = '';
       actionButtons.innerHTML = '';
 
-      // 1. SPOTIFY AUDIO
-      if (data.platform === 'spotify') {
+      // 1. AUDIO TRACKS (Spotify / Apple Music / YouTube Music / Audio Only)
+      if (data.platform === 'spotify' || data.platform === 'applemusic' || data.type === 'audio') {
         resTypeBadge.textContent = 'Audio Track';
         mediaPreview.innerHTML = `
           <div class="p-6 flex flex-col items-center text-center space-y-4 w-full">
-            <img src="${data.cover || ''}" class="w-40 h-40 rounded-lg shadow-md object-cover border border-subtle" />
+            <img src="${data.cover || data.thumbnail || ''}" class="w-40 h-40 rounded-lg shadow-md object-cover border border-subtle" />
             <div class="space-y-0.5">
               <p class="font-semibold text-sm text-white">${data.title}</p>
-              <p class="text-xs text-zinc-400 font-mono">${data.artist} ${data.album ? '— ' + data.album : ''}</p>
+              <p class="text-xs text-zinc-400 font-mono">${data.artist || data.author || '-'} ${data.album ? '— ' + data.album : ''}</p>
             </div>
-            ${data.downloadUrl ? `<audio controls playsinline class="w-full max-w-sm"><source src="${data.downloadUrl}" type="audio/mpeg"></audio>` : ''}
+            ${data.downloadUrl ? `<audio controls playsinline preload="metadata" class="w-full max-w-sm"><source src="${data.downloadUrl}" type="audio/mpeg"></audio>` : ''}
           </div>
         `;
 
         if (data.downloadUrl) {
+          const defaultAudioHref = data.downloadUrl.startsWith('/api/')
+            ? `${data.downloadUrl}${data.downloadUrl.includes('?') ? '&' : '?'}download=1&filename=${encodeURIComponent(data.fileName || (data.title + '.mp3'))}`
+            : `/api/proxy?url=${encodeURIComponent(data.downloadUrl)}&filename=${encodeURIComponent(data.fileName || 'track.mp3')}`;
+
           actionButtons.innerHTML += `
-            <a href="/api/proxy?url=${encodeURIComponent(data.downloadUrl)}&filename=${encodeURIComponent(data.fileName || 'track.mp3')}" class="flex-1 py-3 px-4 bg-white hover:bg-zinc-200 text-black font-semibold rounded-lg text-xs font-mono text-center flex items-center justify-center gap-2 transition-colors">
+            <a href="${defaultAudioHref}" class="flex-1 py-3 px-4 bg-white hover:bg-zinc-200 text-black font-semibold rounded-lg text-xs font-mono text-center flex items-center justify-center gap-2 transition-colors">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span>Download MP3 Audio</span>
+              <span>Download MP3 (320kbps Master)</span>
             </a>
           `;
         }
