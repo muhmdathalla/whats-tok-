@@ -2,6 +2,7 @@ import { downloadTikTok } from './lib/tiktok.js';
 import { downloadInstagram } from './lib/instagram.js';
 import { downloadYouTube } from './lib/youtube.js';
 import { downloadSpotify } from './lib/spotify.js';
+import { downloadAppleMusic } from './lib/applemusic.js';
 import { downloadTwitter } from './lib/twitter.js';
 import { downloadPinterest } from './lib/pinterest.js';
 import { downloadFacebook } from './lib/facebook.js';
@@ -73,6 +74,12 @@ export async function handleMessage(sock, m) {
       // 1. SPOTIFY (Music / Audio MP3)
       if (PATTERNS.SPOTIFY.test(url)) {
         await handleSpotify(sock, targetJid, url);
+        break;
+      }
+
+      // 1b. APPLE MUSIC (Music / Audio MP3)
+      if (PATTERNS.APPLE_MUSIC.test(url)) {
+        await handleAppleMusic(sock, targetJid, url);
         break;
       }
 
@@ -153,6 +160,38 @@ async function handleSpotify(sock, targetJid, url) {
     console.error('[Spotify Error]:', err.message);
     await sock.sendMessage(targetJid, {
       text: `❌ *Gagal mendownload Spotify:*\n${err.message}`
+    });
+  }
+}
+
+/**
+ * Handler Apple Music Downloader
+ */
+async function handleAppleMusic(sock, targetJid, url) {
+  console.log(`[Apple Music] Mengunduh lagu: ${url}`);
+  try {
+    const data = await downloadAppleMusic(url);
+
+    if (data.cover) {
+      await sock.sendMessage(targetJid, {
+        image: { url: data.cover },
+        caption: `🍎 *Apple Music*\n📌 *Judul:* ${data.title}\n👤 *Artis:* ${data.artist}\n\n_Sedang mengirim file audio MP3..._`
+      });
+    }
+
+    const fullAudioUrl = `http://localhost:${process.env.PORT || 3000}${data.downloadUrl}`;
+    const audioBuf = await getBuffer(fullAudioUrl);
+    await sock.sendMessage(targetJid, {
+      audio: audioBuf,
+      mimetype: 'audio/mp4',
+      fileName: data.fileName || `${data.title}.mp3`
+    });
+
+    console.log(`[Apple Music] Sukses mengirim lagu: ${data.title}`);
+  } catch (err) {
+    console.error('[Apple Music Error]:', err.message);
+    await sock.sendMessage(targetJid, {
+      text: `❌ *Gagal mendownload Apple Music:*\n${err.message}`
     });
   }
 }
