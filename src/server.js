@@ -259,14 +259,31 @@ app.get('/api/proxy', async (req, res) => {
   }
 
   try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    };
+
+    if (url.includes('tiktok') || url.includes('musical.ly') || url.includes('byteoversea')) {
+      headers['Referer'] = 'https://www.tiktok.com/';
+      headers['Origin'] = 'https://www.tiktok.com';
+    } else if (url.includes('instagram') || url.includes('cdninstagram') || url.includes('fbcdn')) {
+      headers['Referer'] = 'https://www.instagram.com/';
+      headers['Origin'] = 'https://www.instagram.com';
+    } else if (url.includes('twitter') || url.includes('twimg') || url.includes('x.com')) {
+      headers['Referer'] = 'https://twitter.com/';
+    }
+
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
     const response = await axios({
       method: 'get',
       url,
       responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      timeout: 30000
+      headers,
+      timeout: 30000,
+      maxRedirects: 5
     });
 
     const fname = filename || 'downloaded_media';
@@ -274,10 +291,15 @@ app.get('/api/proxy', async (req, res) => {
     if (response.headers['content-type']) {
       res.setHeader('Content-Type', response.headers['content-type']);
     }
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
 
     response.data.pipe(res);
   } catch (err) {
-    res.status(500).send('Proxy download failed: ' + err.message);
+    console.warn('[Proxy Fallback]: direct redirect to URL due to:', err.message);
+    // Fallback: redirect user directly to target URL so browser handles it natively
+    res.redirect(url);
   }
 });
 
