@@ -1,5 +1,6 @@
-import { instagram } from '@jerrycoder/instagram-api';
+import { instagram as jerryInstagram } from '@jerrycoder/instagram-api';
 import * as btch from 'btch-downloader';
+import * as scrapr from '@coflyn/scrapr';
 
 /**
  * Download Instagram Media (Single Photo, Carousel Multi-photo, Reels/Video)
@@ -9,9 +10,64 @@ export async function downloadInstagram(rawUrl) {
   // Bersihkan query string parameter (misal: ?igsh=... atau ?mdxt=...)
   const cleanUrl = rawUrl.split('?')[0];
 
-  // Method 1: @jerrycoder/instagram-api (Sangat stabil untuk Carousel Multi-photo & Reels)
+  // Method 1: @coflyn/scrapr (indown, snapsave, direct)
+  if (scrapr && scrapr.instagram) {
+    const providers = [scrapr.instagram.indown, scrapr.instagram.snapsave, scrapr.instagram.snapinsta, scrapr.instagram.direct];
+    for (const provider of providers) {
+      if (typeof provider !== 'function') continue;
+      try {
+        const res = await provider(cleanUrl);
+        if (res && res.status && Array.isArray(res.downloads) && res.downloads.length > 0) {
+          const items = [];
+          for (const dl of res.downloads) {
+            const link = dl.url;
+            if (link && !items.some(i => i.url === link)) {
+              items.push({
+                type: dl.type === 'video' || link.includes('.mp4') ? 'video' : 'image',
+                url: link
+              });
+            }
+          }
+
+          if (items.length > 0) {
+            const hasVideo = items.some(i => i.type === 'video');
+            const hasImage = items.some(i => i.type === 'image');
+            const overallType = hasVideo && hasImage ? 'mixed' : (hasVideo ? 'video' : 'images');
+
+            const formats = items.map((item, idx) => ({
+              label: item.type === 'video'
+                ? (items.length > 1 ? `Reels Video #${idx + 1} (Original MP4)` : 'High-Quality Video (Original MP4)')
+                : (items.length > 1 ? `Carousel Photo #${idx + 1} (Original)` : 'High-Resolution Photo'),
+              quality: 'Original HD',
+              type: item.type,
+              ext: item.type === 'video' ? 'mp4' : 'jpg',
+              url: item.url
+            }));
+
+            const firstVideo = items.find(i => i.type === 'video');
+            const firstImage = items.find(i => i.type === 'image');
+
+            return {
+              type: overallType,
+              caption: res.title || 'Instagram Media',
+              thumbnail: res.thumbnail || firstImage?.url,
+              items: items.slice(0, 20),
+              videoUrl: firstVideo?.url,
+              imageUrl: firstImage?.url,
+              images: items.filter(i => i.type === 'image').map(i => i.url),
+              formats
+            };
+          }
+        }
+      } catch (err) {
+        // Continue to next provider
+      }
+    }
+  }
+
+  // Method 2: @jerrycoder/instagram-api (Carousel Multi-photo & Reels)
   try {
-    const res = await instagram(cleanUrl).catch(() => instagram(rawUrl));
+    const res = await jerryInstagram(cleanUrl).catch(() => jerryInstagram(rawUrl));
     if (res) {
       const items = [];
 
